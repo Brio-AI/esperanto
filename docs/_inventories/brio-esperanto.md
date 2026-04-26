@@ -1,0 +1,287 @@
+# Brio Esperanto — Wiki Page Inventory
+
+**Domain:** Brio-Esperanto (the unified AI-provider interface library; consumed by BrioDocs as a git submodule)
+**Author:** esperanto module agent
+**Date:** 2026-04-25
+**Source interview:** _none on file — this inventory is drafted from `CLAUDE.md`, `docs/`, source, and `.claude/memory/`._
+
+Esperanto is a Python library, not a service. Its core value proposition is **shape consistency** across 15+ AI providers — same `ChatCompletion`/`Message`/`Usage` types, same call surface, same `<out>...</out>` fencing contract — regardless of whether the underlying provider is OpenAI, Anthropic, llama.cpp, or a HuggingFace local model. The repo is split into two packages: `esperanto/` (provider implementations) and `brio_ext/` (BrioDocs-specific extension layer that adds adapter-based chat-template rendering, output fencing, metrics logging, and a LangChain bridge). The wiki shape reflects that — most fragility lives at the brio_ext layer, where Esperanto meets the BrioDocs application contract.
+
+## Doc-layer reminder
+
+Per repo convention, this inventory treats sources by layer:
+
+- **`docs/`** — canonical reference for behavior; cited by wiki pages.
+- **`CLAUDE.md`** — operational directives for the module agent. **Not** a canonical wiki source.
+- **`.claude/memory/`** — synthesis snapshots. **Not** canonical sources.
+- **Top-level planning files** (`NEXT_STEPS.md`, `Brio_Esperanto_implementation_Plan.md`, `BRIODOCS_TIERS.md`, `Brio_Esperanto_git_setup_README.md`) — historical or aspirational; should be moved to `_OLD/` and `_Future/` per Registry's example. **Not** canonical sources.
+
+## Source status field
+
+Every entry below has a `source_status` field with exactly one of three values.
+
+| Status | Meaning | Count |
+|---|---|---|
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 6 |
+| `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 6 |
+| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 10 |
+
+**Totals:** 22 entries (1 repo overview + 21 pages). 10 of 22 are blocked on a missing `docs/` source — concentrated around the brio_ext-layer architectural commitments (fencing contract, adapter-driven rendering, no_think semantics) that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today.
+
+---
+
+## Pages this domain needs
+
+### Repo overview (lives in `repos/`)
+
+#### `[[brio-esperanto]]`
+- **Category:** repo overview
+- **Source status:** `stale-needs-update`
+- **Summary:** Python library providing a unified interface for 15+ AI providers (LLM, embedding, reranker, STT, TTS) plus a BrioDocs-specific extension layer (`brio_ext`) that adds chat-template adapters, `<out>` fencing, metrics, and LangChain compatibility. Consumed by BrioDocs as a git submodule, pinned by tag.
+- **Canonical source:** `docs/2025-12-20_Developer_Guide.md`. Stamps version 2.7.1; current `pyproject.toml` is 2.8.0. Doesn't reflect: the `start_server_v2.sh` tier-based launcher, the `no_think` parameter migration from factory to adapters (commit e520800), or the streaming fence-extraction fix (commit 1855de0).
+- **Related:** `[[esperanto-core-library]]`, `[[brio-ext-extension-package]]`, `[[briodocs-submodule-integration]]`
+
+### Subsystems
+
+#### `[[esperanto-core-library]]`
+- **Category:** subsystem
+- **Source status:** `stale-needs-update`
+- **Summary:** The `esperanto` package — provider implementations for 15+ LLMs (OpenAI, Anthropic, Google, Groq, Ollama, OpenRouter, xAI, Perplexity, Azure, Mistral, DeepSeek, Vertex, plus `openai-compatible` for self-hosted endpoints) plus embedding, reranker, STT, and TTS providers behind a single `AIFactory`.
+- **Canonical source:** `docs/2025-12-20_Developer_Guide.md` (Project Structure + Registry Architecture sections) plus `docs/llm.md`. Same staleness as the repo overview; `llm.md` is Oct 2025 vintage and doesn't reflect the `Timings` response field or the recent xAI/DeepSeek normalization passes.
+- **Related:** `[[provider-registry-pattern]]`, `[[provider-normalization-pattern]]`, `[[multiprovider-llm-support]]`, `[[http-only-architecture]]`
+
+#### `[[brio-ext-extension-package]]`
+- **Category:** subsystem
+- **Source status:** `stale-needs-update`
+- **Summary:** The `brio_ext` package — wraps `AIFactory` with `BrioAIFactory`, dispatches chat-template adapters, enforces `<out>...</out>` fencing on responses, logs JSONL metrics, and exposes a LangChain-compatible bridge. Adds two local providers (`llamacpp`, `hf_local`) on top of Esperanto's cloud-provider set.
+- **Canonical source:** `docs/brio_ext_integration.md` (sections 1–9 and 11) plus `docs/brio_ext_integration_v2.md` (which supersedes section 10). The integration doc is broadly current but the section-10-supersedence is awkward; a clean rewrite is overdue. The relationship between `BrioAIFactory.create_language` and `register_with_factory` (legacy patch path) isn't explained anywhere.
+- **Related:** `[[chat-adapter-system]]`, `[[fencing-contract]]`, `[[langchain-bridge]]`, `[[metrics-logger]]`
+
+#### `[[chat-adapter-system]]`
+- **Category:** subsystem
+- **Source status:** `stale-needs-update`
+- **Summary:** Adapter registry (`src/brio_ext/registry.py`) with `QwenAdapter`, `LlamaAdapter`, `MistralAdapter`, `GemmaAdapter`, `PhiAdapter` — each renders messages into the model's native chat-template format (ChatML, Llama, Mistral) and declares its own stop tokens. Selection prefers `model_id` pattern matching, falls back to an explicit `chat_format` hint for custom-named models.
+- **Canonical source:** `docs/llama_cpp_test_specification.md` (Resolution Status section) frames the historical Qwen system-message bug that motivated adapters. The doc itself is Oct 2025, predates Phi adapter validation and the `no_think` migration to per-adapter ownership. The selection-logic-and-fallback rule lives only in `registry.py` docstrings.
+- **Related:** `[[fencing-contract]]`, `[[adapter-driven-rendering]]`, `[[llamacpp-local-provider]]`, `[[no-think-mode]]`
+
+#### `[[llamacpp-local-provider]]`
+- **Category:** subsystem
+- **Source status:** `stale-needs-update`
+- **Summary:** `LlamaCppLanguageModel` — talks to a local llama.cpp HTTP server (default `http://127.0.0.1:8765`), maps `max_tokens` to the server's `n_predict`, extracts built-in `timings` (prompt_per_second, predicted_per_second), and produces both message-mode and prompt-mode payloads to match the active adapter.
+- **Canonical source:** `docs/llama_cpp_test_specification.md`. Status section is dated Oct 27 2025 and lists Phi-4-mini as "NOT TESTED YET", but `brio_ext_integration_v2.md` Status Matrix shows all seven test models green. Test-spec needs a refresh pass.
+- **Related:** `[[chat-adapter-system]]`, `[[llamacpp-server-tiers]]`, `[[performance-metrics]]`
+
+#### `[[metrics-logger]]`
+- **Category:** subsystem
+- **Source status:** `current`
+- **Summary:** JSONL metrics logger (`brio_ext/metrics/logger.py`) that captures per-request `tier_id`, `model`, `total_time_ms`, `tokens_per_second`, prompt/completion tokens, and optional `ttft_ms` for streaming. Toggleable at runtime via `enable_metrics()`/`disable_metrics()` or at startup via `BRIO_METRICS_ENABLED`. Default path is platform-aware (`Library/Application Support/BrioDocs/` on macOS, `%APPDATA%/BrioDocs/` on Windows, `~/.config/briodocs/` on Linux).
+- **Canonical source:** `docs/2025-12-08 Performance Metrics Implementation.md` plus `docs/2025-12-10 Logging_migration_to_scalable_framework.md`. Both align with current code.
+- **Related:** `[[performance-metrics]]`, `[[chat-completion-pipeline]]`
+
+### Flows
+
+#### `[[chat-completion-pipeline]]`
+- **Category:** flow
+- **Source status:** `missing`
+- **Summary:** End-to-end path of a `chat_complete` call through `BrioAIFactory` — `_wrap_language_model` injects an adapter, `render_for_model` produces either a `messages` payload (for chat-template providers like OpenAI/Anthropic) or a `prompt` payload (for prompt-mode providers like llamacpp/hf_local), the underlying provider executes, and `_ensure_fenced_completion` re-fences the response in `<out>...</out>` after stripping any model-emitted tags and trailing incomplete special tokens.
+- **Canonical source:** Needs `docs/architecture/chat-completion-pipeline.md`. The flow exists across `brio_ext/factory.py`, `brio_ext/renderer.py`, and `brio_ext/adapters/*` but is never described as a single pipeline. The render-mode split (`TEMPLATE_PROVIDERS` vs. `PROMPT_PROVIDERS`) and the `_stop_config_guard` mechanism are particularly under-documented.
+- **Related:** `[[adapter-driven-rendering]]`, `[[fencing-contract]]`, `[[chat-adapter-system]]`
+
+#### `[[langchain-bridge-flow]]`
+- **Category:** flow
+- **Source status:** `missing`
+- **Summary:** How `model.to_langchain()` (and the richer `BrioBaseChatModel` / `create_langchain_wrapper`) preserves the brio_ext rendering pipeline when consumed by LangChain/LangGraph — converting LangChain message types to brio_ext format, calling the wrapped `chat_complete`, then stripping `<out>` fences and `<think>` blocks before returning an `_AIMessage`.
+- **Canonical source:** Needs `docs/flows/langchain-bridge.md`. Touched briefly in `docs/brio_ext_integration.md` §5 and the developer guide's LangChain Integration section, but the two-paths story (lightweight `to_langchain()` vs. full `BrioBaseChatModel`) and the `no_think` parameter wiring aren't explained.
+- **Related:** `[[langchain-langgraph-integration]]`, `[[fencing-contract]]`, `[[no-think-mode]]`, `[[streaming-completion-flow]]`
+
+#### `[[streaming-completion-flow]]`
+- **Category:** flow
+- **Source status:** `missing`
+- **Summary:** Streaming path through brio_ext — uses `StreamingFenceFilter` and `StreamingThinkTagFilter` (in `esperanto.utils.streaming`) to apply `<out>`/`<output>` fence extraction and `<think>`-tag suppression chunk-by-chunk. Recently fixed (commit 1855de0) so the streaming path now matches the non-streaming `_ensure_fence` behavior.
+- **Canonical source:** Needs `docs/flows/streaming-completion.md`. The fix was substantive (PR #2 / commit 7244b3e ported `_parse_fenced_content` into a shared module-level function) but only the commit messages document it. TTFT measurement during streaming and the "final-chunk usage/timings" handoff also live only in code.
+- **Related:** `[[fencing-contract]]`, `[[langchain-bridge-flow]]`, `[[performance-metrics]]`
+
+#### `[[adding-a-new-provider]]`
+- **Category:** flow
+- **Source status:** `current`
+- **Summary:** Operational steps to extend the registry — create `{Provider}LanguageModel` in `src/esperanto/providers/{type}/`, register in `_provider_modules` in `factory.py`, write tests under `tests/providers/{type}/`, run `uv run pytest -v`. Same pattern applies to embedding/reranker/STT/TTS.
+- **Canonical source:** `docs/2025-12-20_Developer_Guide.md` (Adding a New Provider section, lines ~200–400). The walkthrough is concrete and current; sample code matches the codebase pattern.
+- **Related:** `[[provider-registry-pattern]]`, `[[provider-normalization-pattern]]`, `[[testing-discipline]]`
+
+### Architecture
+
+#### `[[provider-registry-pattern]]`
+- **Category:** architecture
+- **Source status:** `missing`
+- **Summary:** Static dictionary + `importlib`-based dynamic loading — `_provider_modules["language"]["openai"] = "esperanto.providers.llm.openai:OpenAILanguageModel"`. Lets the library declare 15+ providers without import-time costs from optional dependencies (e.g., `transformers`, `torch`). `BrioAIFactory` extends the parent map by `deepcopy` + override (`_LANGUAGE_OVERRIDES` for `llamacpp`/`hf_local`).
+- **Canonical source:** Needs `docs/architecture/provider-registry.md`. Described informally in the developer guide's Registry Architecture section, but the `deepcopy`-and-override extension pattern that brio_ext uses isn't explained anywhere.
+- **Related:** `[[esperanto-core-library]]`, `[[brio-ext-extension-package]]`, `[[adding-a-new-provider]]`
+
+#### `[[provider-normalization-pattern]]`
+- **Category:** architecture
+- **Source status:** `stale-needs-update`
+- **Summary:** All providers must convert vendor-specific responses into the shared `ChatCompletion` / `Message` / `Choice` / `Usage` / `Timings` Pydantic models before returning. This is the library's core value proposition — consumers code against one shape regardless of provider.
+- **Canonical source:** `docs/2025-12-20_Developer_Guide.md` (Common Types Reference and Design Principles sections). The `Timings` field was added in 2.7.x but the developer-guide ChatCompletion definition still doesn't list it; refresh against `src/esperanto/common_types/response.py`.
+- **Related:** `[[provider-registry-pattern]]`, `[[multiprovider-llm-support]]`, `[[fencing-contract]]`
+
+#### `[[adapter-driven-rendering]]`
+- **Category:** architecture
+- **Source status:** `missing`
+- **Summary:** The architectural choice to split *transport* (provider HTTP plumbing) from *rendering* (chat-template format). Providers shouldn't know about ChatML vs. Llama vs. Mistral; adapters shouldn't know about HTTP. The renderer dispatches: `TEMPLATE_PROVIDERS` (cloud APIs that handle templating themselves) get message-mode passthrough; `PROMPT_PROVIDERS` (llamacpp, hf_local) get adapter-rendered raw prompts.
+- **Canonical source:** Needs `docs/architecture/adapter-driven-rendering.md`. The `TEMPLATE_PROVIDERS`/`PROMPT_PROVIDERS` split lives only in `brio_ext/renderer.py` line 13–14 with no rationale documented. This was the architectural fix for the Qwen system-message bug and it deserves a first-class explanation.
+- **Related:** `[[chat-adapter-system]]`, `[[chat-completion-pipeline]]`, `[[fencing-contract]]`
+
+#### `[[fencing-contract]]`
+- **Category:** architecture
+- **Source status:** `missing`
+- **Summary:** Every chat completion returned through `BrioAIFactory` is wrapped in `<out>...</out>`. The contract: brio_ext owns fencing, LLMs never see `<out>` in their prompts (deliberately removed in adapter prompts and stop tokens — see `NEXT_STEPS.md` for the rationale). Consumers (BrioDocs) rely on the fences to extract clean content from raw model output, including in streaming mode after commit 1855de0.
+- **Canonical source:** Needs `docs/architecture/fencing-contract.md`. The discipline is enforced in `_ensure_fence` (factory.py:250) and `_strip_trailing_incomplete_tokens` but documented only in code comments and the "Architecture Summary" diagram in `NEXT_STEPS.md`. This is the most load-bearing client contract this library has — it deserves an explicit doc.
+- **Related:** `[[client-contract-fencing]]`, `[[chat-adapter-system]]`, `[[streaming-completion-flow]]`, `[[langchain-bridge-flow]]`
+
+#### `[[http-only-architecture]]`
+- **Category:** architecture
+- **Source status:** `stale-needs-update`
+- **Summary:** Deliberate design choice: every provider uses `httpx` directly rather than vendor SDKs (no `openai`, no `anthropic`, no `google-generativeai`). Trades vendor-SDK ergonomics for control over normalization, predictable failure modes, and minimal dependency footprint (core install needs only `pydantic` + `httpx`).
+- **Canonical source:** `docs/2025-12-20_Developer_Guide.md` (Design Principles section, line ~603). Mentioned but not justified — the rationale (control over response shape, avoiding provider-SDK breaking changes, smaller install surface) is in `CLAUDE.md` but not in canonical docs.
+- **Related:** `[[provider-normalization-pattern]]`, `[[esperanto-core-library]]`
+
+### Integrations
+
+#### `[[briodocs-submodule-integration]]`
+- **Category:** integration
+- **Source status:** `missing`
+- **Summary:** BrioDocs consumes Brio-Esperanto as a git submodule pinned by tag (e.g., `v2.8.0`). The release-tagging discipline (`pyproject.toml` version bump → tag → push) is what makes BrioDocs builds reproducible. BrioDocs treats `BrioAIFactory` as the import boundary; everything downstream of `chat_complete` is brio_ext's contract.
+- **Canonical source:** Needs `docs/integrations/briodocs-submodule.md`. The developer guide mentions the submodule pattern in its "Integration with BrioDocs" section but doesn't document the version-tagging flow or the BrioDocs-side import surface. Co-authoring with the BrioDocs agent would produce the most useful page.
+- **Related:** `[[fencing-contract]]`, `[[release-tagging-discipline]]`, `[[briodocs-llm-pipeline]]` (BrioDocs-owned)
+
+#### `[[langchain-langgraph-integration]]`
+- **Category:** integration
+- **Source status:** `current`
+- **Summary:** What `to_langchain()` exposes — a `BrioBaseChatModel` that LangGraph and LangChain chains can use directly. The wrapper preserves brio_ext's full rendering+fencing pipeline (unlike calling the underlying esperanto provider's `to_langchain()` directly, which bypasses brio_ext). Streaming and `no_think` mode are both supported.
+- **Canonical source:** `docs/brio_ext_integration.md` §5 plus `docs/2025-12-20_Developer_Guide.md` (LangChain Integration section). Both reflect the current API.
+- **Related:** `[[langchain-bridge-flow]]`, `[[fencing-contract]]`, `[[no-think-mode]]`
+
+#### `[[llamacpp-server-tiers]]`
+- **Category:** integration
+- **Source status:** `current`
+- **Summary:** Brio-Esperanto ships `scripts/start_server_v2.sh` and `fixtures/briodocs_config.yaml` defining three tiers (Tier 1: 8K ctx + GPU; Tier 2: 4K ctx + GPU; Tier 3: 2K ctx + CPU-only) decoupled from seven model selections. Tier defines *how* to run the server; model defines *what* to run. BrioDocs reads the same config to launch the local server with matching settings.
+- **Canonical source:** `docs/brio_ext_integration_v2.md` (§9.1, §9.4). Current and reflects the v2 launcher.
+- **Related:** `[[tier-based-server-config]]`, `[[llamacpp-local-provider]]`, `[[hardware-tiers]]` (BrioDocs-owned)
+
+### Features
+
+#### `[[multiprovider-llm-support]]`
+- **Category:** feature
+- **Source status:** `stale-needs-update`
+- **Summary:** Single `AIFactory.create_language(provider, model_name)` call surface across 15+ LLM providers — OpenAI, OpenAI-compatible, Anthropic, Google, Groq, Ollama, OpenRouter, xAI, Perplexity, Azure, Mistral, DeepSeek, Vertex, plus local llamacpp/hf_local via brio_ext.
+- **Canonical source:** `docs/llm.md`. Provider list and examples are correct but Oct 2025 vintage; doesn't mention the `Timings` field or recent normalization fixes for streaming responses.
+- **Related:** `[[provider-registry-pattern]]`, `[[provider-normalization-pattern]]`, `[[esperanto-core-library]]`
+
+#### `[[transformers-advanced-embedding]]`
+- **Category:** feature
+- **Source status:** `stale-needs-update`
+- **Summary:** Local-only embedding features in the `transformers` provider — task-aware prefixes (8 task types from `EmbeddingTaskType`), late chunking with semantic boundary detection, output-dimension control via PCA reduction or zero-padding expansion, model-aware chunk-size limits.
+- **Canonical source:** `docs/TRANSFORMERS_ADVANCED_FEATURES.md`. Oct 2025 vintage; references match current code shape but the "Recommended Models" list and the model-pattern chunk-size table may have drifted.
+- **Related:** `[[esperanto-core-library]]`, `[[provider-normalization-pattern]]`
+
+#### `[[performance-metrics]]`
+- **Category:** feature
+- **Source status:** `current`
+- **Summary:** Per-request capture of `tokens_per_second`, `prompt_tokens_per_second`, `total_time_ms`, and (streaming-only) `ttft_ms` — extracted from llama.cpp's built-in `timings` for local models, calculated from wall-clock for cloud providers. Surfaced both in the `ChatCompletion.timings` response field (consumers see live numbers) and in the JSONL log (offline analysis).
+- **Canonical source:** `docs/2025-12-08 Performance Metrics Implementation.md`. Aligns with current code; all four phases marked complete.
+- **Related:** `[[metrics-logger]]`, `[[llamacpp-local-provider]]`, `[[streaming-completion-flow]]`
+
+### Concepts
+
+#### `[[client-contract-fencing]]`
+- **Category:** concept
+- **Source status:** `missing`
+- **Summary:** The notion that the `<out>...</out>` envelope is not formatting — it is a production API contract with BrioDocs. Changing the fence shape (e.g., to `<output>`, or removing fencing for some provider, or letting LLMs emit fences themselves) would silently break every consumer that strips fences to get clean content. Sibling in spirit to BrioRegistry's `[[client-contract]]`.
+- **Canonical source:** Needs `docs/concepts/client-contract-fencing.md`. The discipline is referenced in `CLAUDE.md` and the LangChain wrapper docstring, but no doc treats it as a contract with versioning implications. Likely co-authored with `[[fencing-contract]]`.
+- **Related:** `[[fencing-contract]]`, `[[briodocs-submodule-integration]]`, `[[client-contract]]` (Registry-owned, parallel concept)
+
+#### `[[no-think-mode]]`
+- **Category:** concept
+- **Source status:** `missing`
+- **Summary:** Optional `/no_think` directive that brio_ext can prepend to the first user message for reasoning-capable models (Qwen3, Qwen3.5). Used when token budget can't accommodate a full reasoning block plus an answer (typical for Tier 2/3). Recently moved from factory ownership to per-adapter ownership (commit e520800) so each adapter can decide whether the directive applies.
+- **Canonical source:** Needs `docs/concepts/no-think-mode.md`. The `no_think` parameter threads through `factory.py`, `langchain_wrapper.py`, `renderer.py`, and the adapters but is documented only by inline docstrings. The reason it lives on adapters now (and not the factory) is non-obvious without reading the commit.
+- **Related:** `[[chat-adapter-system]]`, `[[langchain-bridge-flow]]`, `[[tier-based-server-config]]`
+
+#### `[[tier-based-server-config]]`
+- **Category:** concept
+- **Source status:** `missing`
+- **Summary:** Configuration split underlying `start_server_v2.sh`: tier defines *how* to run a local model (context window, GPU layers, threads, mlock), model defines *what* to run (which GGUF file, which chat format). The split lets BrioDocs select hardware-appropriate settings independently of model choice.
+- **Canonical source:** Needs `docs/concepts/tier-based-server-config.md`. The split is named in `brio_ext_integration_v2.md` ("Tier defines HOW to run; Model defines WHAT to run") but only as a benefits bullet; not explained as a design concept.
+- **Related:** `[[llamacpp-server-tiers]]`, `[[no-think-mode]]`, `[[hardware-tiers]]` (BrioDocs-owned)
+
+### Operational
+
+#### `[[release-tagging-discipline]]`
+- **Category:** operational
+- **Source status:** `missing`
+- **Summary:** Cutting a release: bump `pyproject.toml` version → commit → `git tag vX.Y.Z` → push tag → BrioDocs submodule pointer can pin to the tag. The `/esperanto-release` slash command automates the version bump. Every tag is a frozen API surface that BrioDocs may pin against — breaking changes need a major bump and a coordination beat with the BrioDocs team.
+- **Canonical source:** Needs `docs/operational/release-tagging.md`. The mechanism is described in the developer guide's "Versioning" subsection (one paragraph), but the *discipline* — what counts as breaking, when to coordinate, how the `/esperanto-release` skill fits — is not written down.
+- **Related:** `[[briodocs-submodule-integration]]`, `[[fencing-contract]]`, `[[client-contract-fencing]]`
+
+#### `[[testing-discipline]]`
+- **Category:** operational
+- **Source status:** `current`
+- **Summary:** Two-tier testing: (1) unit tests under `tests/providers/{type}/test_{provider}_provider.py` mock `httpx.Client`/`httpx.AsyncClient` and assert response normalization; (2) integration smoke tests under `src/brio_ext/tests/integration/test_provider_smoke.py` hit live providers behind `BRIO_TEST_<PROVIDER>_MODEL` env-var gates and assert `<out>` fencing is intact end-to-end.
+- **Canonical source:** `docs/2025-12-20_Developer_Guide.md` (Testing Guidelines section) plus `docs/brio_ext_integration.md` §8. Both align with current `tests/` layout.
+- **Related:** `[[adding-a-new-provider]]`, `[[fencing-contract]]`
+
+---
+
+## Backlog: missing canonical docs
+
+Ten wiki pages are blocked on missing `docs/` sources. Suggested authoring order — earlier docs serve as foundation for later ones:
+
+1. **`docs/architecture/fencing-contract.md`** — the `<out>...</out>` discipline as a load-bearing client contract. Foundational; nearly every other missing doc references it.
+2. **`docs/concepts/client-contract-fencing.md`** — the contract framing (sibling to `fencing-contract.md`, focuses on what makes it a contract vs. a format choice). Tightly coupled with the previous item.
+3. **`docs/architecture/adapter-driven-rendering.md`** — the transport-vs-rendering split. The architectural fix that resolved the Qwen system-message bug; deserves a first-class explanation, not just a code comment.
+4. **`docs/architecture/provider-registry.md`** — static-dict + dynamic-import pattern, including the `BrioAIFactory` `deepcopy`-and-override extension trick.
+5. **`docs/architecture/chat-completion-pipeline.md`** — render → call → fence flow tying together the previous architecture docs.
+6. **`docs/flows/streaming-completion.md`** — the streaming path including the recent fence-extraction fix and TTFT capture.
+7. **`docs/flows/langchain-bridge.md`** — `to_langchain()` vs. full `BrioBaseChatModel` and how `no_think` threads through.
+8. **`docs/concepts/no-think-mode.md`** — what `/no_think` does, why it now lives on adapters instead of the factory.
+9. **`docs/concepts/tier-based-server-config.md`** — tier=HOW vs. model=WHAT split as a design concept.
+10. **`docs/integrations/briodocs-submodule.md`** — co-authored with the BrioDocs agent. Submodule pinning, import surface, version-coordination protocol.
+11. **`docs/operational/release-tagging.md`** — release discipline; what counts as breaking; how `/esperanto-release` fits.
+
+(Eleven items, not ten — `client-contract-fencing.md` and `fencing-contract.md` could plausibly fold together but are separated here because the architectural mechanism and the client-contract framing are usefully distinct.)
+
+## Stale-needs-update: existing canonical docs requiring freshness review
+
+Six entries cite four `docs/` files that are still authoritative in shape but predate substantive changes. Refresh against current code/schema before treating as canonical wiki sources.
+
+| File | Vintage | What's drifted | Wiki entries depending on it |
+|---|---|---|---|
+| `docs/2025-12-20_Developer_Guide.md` | 2025-12-20 (mtime 2026-03-01) | Stamps version 2.7.1; current `pyproject.toml` is 2.8.0. Doesn't reflect the `start_server_v2.sh` tier launcher, the `no_think` migration to adapters (commit e520800), the streaming fence-extraction fix (commit 1855de0), or the `Timings` response field in the Common Types Reference. | `[[brio-esperanto]]`, `[[esperanto-core-library]]`, `[[provider-normalization-pattern]]`, `[[http-only-architecture]]` |
+| `docs/brio_ext_integration.md` | 2026-03-01 mtime, but §10 explicitly marked superseded | Section 10 (llama.cpp test matrix) refers reader to `brio_ext_integration_v2.md`. The supersedence is awkward; sections 1–9 and 11 are still authoritative but a clean rewrite is overdue. The `register_with_factory` legacy patch path isn't explained. | `[[brio-ext-extension-package]]` |
+| `docs/llm.md` | 2025-10-24 mtime | Provider list correct but predates the `Timings` field, recent streaming-response normalization, and any mention of brio_ext layering. Reads as if Esperanto is the whole story; new readers miss that BrioDocs uses `BrioAIFactory`, not `AIFactory`. | `[[multiprovider-llm-support]]` |
+| `docs/llama_cpp_test_specification.md` | 2025-10-27 ("Production Ready") | Status matrix lists Phi-4-mini as "NOT TESTED YET" but `brio_ext_integration_v2.md` shows all seven test models green. Predates `start_server_v2.sh` migration. | `[[chat-adapter-system]]`, `[[llamacpp-local-provider]]` |
+| `docs/TRANSFORMERS_ADVANCED_FEATURES.md` | 2025-10-24 mtime | Reference shape is correct; the "Recommended Models" list and model-pattern chunk-size table may have drifted as new embedding models have been published. Needs a low-effort refresh pass. | `[[transformers-advanced-embedding]]` |
+
+## Stale documentation to move to `_OLD/`
+
+Top-level planning files that are not canonical references and should not be cited by wiki pages:
+
+- `NEXT_STEPS.md` — explicit "What's Next (Not Complete Yet)" plan from the `<out>`-removal-from-prompts work. Most items have shipped; the file no longer reflects current state. Move to `_OLD/`. The "Architecture Summary" diagram at the bottom is the seed for the future `[[fencing-contract]]` page; preserve that fragment when writing the new doc.
+- `Brio_Esperanto_implementation_Plan.md` — initial implementation tracker. Likely superseded by current state; review and archive.
+- `Brio_Esperanto_git_setup_README.md` — one-time setup instructions. Move to `_OLD/`.
+- `BRIODOCS_TIERS.md` — older tier description that predates `fixtures/briodocs_config.yaml`. Move to `_OLD/`; the canonical tier definition now lives in the YAML.
+
+## Aspirational documentation to move to `_Future/`
+
+None identified at this scan. The roadmap-style sections inside `brio_ext_integration.md` §11 ("Roadmap for automation") could be split out to `_Future/test-automation-roadmap.md` if anyone tries to cite them as current.
+
+## Pages I expect other agents to own (not in my inventory)
+
+Used as `related:` targets without authoring the page myself. Listed here so cross-references resolve cleanly when the BrioDocs / Registry / MS-Addin / deployment inventories arrive.
+
+- `[[briodocs-llm-pipeline]]` — likely BrioDocs-owned (subsystem). How the BrioDocs app assembles `system + content + insights + user` messages before handing them to `BrioAIFactory.create_language(...).chat_complete(...)`. The thing that calls Esperanto.
+- `[[context-builder]]` — likely BrioDocs-owned (subsystem). Pre-truncation logic that runs upstream of brio_ext to keep context within the active tier's window. Esperanto trusts this happens; if it doesn't, llama.cpp truncates silently.
+- `[[hardware-tiers]]` — likely BrioDocs-owned (concept). The user-facing "high performance / balanced / fast" tier abstraction. Esperanto's `[[llamacpp-server-tiers]]` is the implementation; `[[hardware-tiers]]` is the mental model.
+- `[[client-contract]]` — Registry-owned (concept). Parallel concept: certain JSON files Registry serves are production APIs. Linked from `[[client-contract-fencing]]` because the *kind* of discipline is the same (treating an internal artifact as a versioned external interface).
+- `[[release-publishing-flow]]` — Registry-owned (flow). The downstream consumer of any tagged Esperanto release that ends up bundled into a BrioDocs desktop build.
+- `[[manifest-reality-reconciliation]]` — deployment-agent-owned (operational). Includes verifying that the BrioDocs binary published to Registry pins to a real Esperanto tag, not a missing one.

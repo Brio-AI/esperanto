@@ -2,9 +2,6 @@
 *.wav
 *.mp3
 
-# MCP config (contains API tokens, each developer creates their own)
-.mcp.json
-
 # Python
 __pycache__/
 *.py[cod]
@@ -112,7 +109,10 @@ podcast.mp3
 
 ai_docs/
 
-.claude
+# Claude — track .claude/memory/ only; everything else under .claude/ is local
+.claude/*
+!.claude/memory/
+!.claude/memory/**
 
 *.local.md
 claude-logs/
