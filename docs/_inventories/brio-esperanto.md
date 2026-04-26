@@ -14,7 +14,7 @@ Per repo convention, this inventory treats sources by layer:
 - **`docs/`** — canonical reference for behavior; cited by wiki pages.
 - **`CLAUDE.md`** — operational directives for the module agent. **Not** a canonical wiki source.
 - **`.claude/memory/`** — synthesis snapshots. **Not** canonical sources.
-- **Top-level planning files** (`NEXT_STEPS.md`, `Brio_Esperanto_implementation_Plan.md`, `BRIODOCS_TIERS.md`, `Brio_Esperanto_git_setup_README.md`) — historical or aspirational; should be moved to `_OLD/` and `_Future/` per Registry's example. **Not** canonical sources.
+- **Top-level planning files** (`NEXT_STEPS.md`, `Brio_Esperanto_implementation_Plan.md`, `BRIODOCS_TIERS.md`, `Brio_Esperanto_git_setup_README.md`) — historical or aspirational; should be moved to `docs/_OLD/` and `docs/_Future/` per Registry's example. **Not** canonical sources.
 
 ## Source status field
 
@@ -262,18 +262,18 @@ Six entries cite four `docs/` files that are still authoritative in shape but pr
 | `docs/llama_cpp_test_specification.md` | 2025-10-27 ("Production Ready") | Status matrix lists Phi-4-mini as "NOT TESTED YET" but `brio_ext_integration_v2.md` shows all seven test models green. Predates `start_server_v2.sh` migration. | `[[chat-adapter-system]]`, `[[llamacpp-local-provider]]` |
 | `docs/TRANSFORMERS_ADVANCED_FEATURES.md` | 2025-10-24 mtime | Reference shape is correct; the "Recommended Models" list and model-pattern chunk-size table may have drifted as new embedding models have been published. Needs a low-effort refresh pass. | `[[transformers-advanced-embedding]]` |
 
-## Stale documentation to move to `_OLD/`
+## Stale documentation moved to `docs/_OLD/`
 
-Top-level planning files that are not canonical references and should not be cited by wiki pages:
+Top-level planning files that are not canonical references and should not be cited by wiki pages. All four were moved under `docs/_OLD/` (alongside the canonical `docs/` tree, so they're discoverable but clearly archived) with per-file rationale in [`docs/_OLD/README.md`](../_OLD/README.md):
 
-- `NEXT_STEPS.md` — explicit "What's Next (Not Complete Yet)" plan from the `<out>`-removal-from-prompts work. Most items have shipped; the file no longer reflects current state. Move to `_OLD/`. The "Architecture Summary" diagram at the bottom is the seed for the future `[[fencing-contract]]` page; preserve that fragment when writing the new doc.
-- `Brio_Esperanto_implementation_Plan.md` — initial implementation tracker. Likely superseded by current state; review and archive.
-- `Brio_Esperanto_git_setup_README.md` — one-time setup instructions. Move to `_OLD/`.
-- `BRIODOCS_TIERS.md` — older tier description that predates `fixtures/briodocs_config.yaml`. Move to `_OLD/`; the canonical tier definition now lives in the YAML.
+- `NEXT_STEPS.md` — explicit "What's Next (Not Complete Yet)" plan from the `<out>`-removal-from-prompts work. Most items have shipped; the file no longer reflects current state. The "Architecture Summary" diagram at the bottom is the seed for the future `[[fencing-contract]]` page; preserve that fragment when writing the new doc.
+- `Brio_Esperanto_implementation_Plan.md` — initial fork-and-integrate plan from when this repo was a `lfnovo/esperanto` fork. Branching strategy and `bridocs-vX.Y` tag scheme superseded by current `main` + semver practice.
+- `Brio_Esperanto_git_setup_README.md` — one-time fork setup notes. Replaced by `docs/2025-12-20_Developer_Guide.md`.
+- `BRIODOCS_TIERS.md` — older tier description that predates `fixtures/briodocs_config.yaml`. Canonical tier definition now lives in the YAML; `docs/brio_ext_integration_v2.md` §9.1 explains it.
 
-## Aspirational documentation to move to `_Future/`
+## Aspirational documentation to move to `docs/_Future/`
 
-None identified at this scan. The roadmap-style sections inside `brio_ext_integration.md` §11 ("Roadmap for automation") could be split out to `_Future/test-automation-roadmap.md` if anyone tries to cite them as current.
+None identified at this scan. The roadmap-style sections inside `brio_ext_integration.md` §11 ("Roadmap for automation") could be split out to `docs/_Future/test-automation-roadmap.md` if anyone tries to cite them as current.
 
 ## Pages I expect other agents to own (not in my inventory)
 
