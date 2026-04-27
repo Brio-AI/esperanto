@@ -332,6 +332,24 @@ class TestGemma4AdapterCleanResponse:
     def test_passes_through_clean_text(self):
         assert self.adapter.clean_response("Just a regular response.") == "Just a regular response."
 
+    def test_strips_leaked_reasoning_before_closing_channel(self):
+        """E4B emits `<reasoning><channel|><answer>` even without an opening
+        `<|channel>` in the response — the opener was implicit. Reasoning must
+        be dropped so only the answer survives.
+        """
+        text = (
+            'The user is asking a general conversational question ("how are you?"). '
+            "As an AI assistant, I need to respond politely.\n\n"
+            "Acknowledge the greeting.\n"
+            "State my status.\n"
+            "Reiterate purpose.<channel|>As an AI, I am operating perfectly "
+            "and ready to assist you!"
+        )
+        assert (
+            self.adapter.clean_response(text)
+            == "As an AI, I am operating perfectly and ready to assist you!"
+        )
+
 
 def test_phi_adapter_renders_chatml_prompt():
     """PhiAdapter renders a ChatML prompt (not a passthrough messages dict)."""

@@ -70,14 +70,21 @@ class Gemma4Adapter(ChatAdapter):
             parts.append(f"{_TURN_CLOSE}\n")
 
         parts.append(f"{_TURN_OPEN}model\n")
-        if not thinking_enabled:
-            # Empty thought channel signals "skip reasoning, answer directly"
-            # (chat_template.jinja line 343).
-            parts.append(f"{_CHANNEL_OPEN}thought\n{_CHANNEL_CLOSE}")
+        # Note: the Gemma 4 E4B template emits no further prefill. Some larger
+        # variants (e.g. 26B-A4B-it) append `<|channel>thought\n<channel|>` to
+        # signal "skip reasoning", but on E4B that prefill is interpreted as an
+        # opening signal and triggers reasoning instead — clean_response below
+        # strips any leaked reasoning before the first `<channel|>`.
 
         return {"prompt": "".join(parts), "stop": [_TURN_CLOSE]}
 
     def clean_response(self, text: str) -> str:
+        # The E4B model often emits `<reasoning><channel|><answer>` even though
+        # the prompt doesn't open a channel — the reasoning lives implicitly
+        # before the closing `<channel|>`. Drop that prefix.
+        if _CHANNEL_OPEN not in text and _CHANNEL_CLOSE in text:
+            text = text.split(_CHANNEL_CLOSE, 1)[1]
+
         cleaned = _THINKING_BLOCK_RE.sub("", text)
         if _CHANNEL_OPEN in cleaned:
             cleaned = cleaned.split(_CHANNEL_OPEN)[0]
