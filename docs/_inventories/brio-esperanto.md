@@ -22,8 +22,8 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 10 |
-| `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 5 |
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 12 |
+| `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 3 |
 | `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 11 |
 
 **Totals:** 26 entries (1 repo overview + 25 pages). 11 of 26 are blocked on a missing `docs/` source — concentrated around the brio_ext-layer architectural commitments (fencing contract, adapter-driven rendering, no_think semantics) that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today.
@@ -31,6 +31,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 **Refresh log:**
 - 2026-04-27: `docs/2025-12-20_Developer_Guide.md` refreshed against version 2.8.1 — flipped `[[brio-esperanto]]` and `[[provider-normalization-pattern]]` to `current`.
 - 2026-04-27: `docs/llm.md` refreshed against version 2.8.1 — added Vertex, brio_ext pointer, `response.timings`/`response.content` examples, and fixed the bogus `chunk.provider` reference in the streaming example. Flipped `[[multiprovider-llm-support]]` and (jointly with the dev guide refresh) `[[esperanto-core-library]]` to `current`.
+- 2026-04-27: `docs/llama_cpp_test_specification.md` refreshed — status badges now show both Oct 2025 (historical) and current ✅ marks for Qwen/Mistral/Phi-4; "The Bug" / "Current Workaround (HACK)" sections marked as historical with explicit "REMOVED" callouts; header points readers to `brio_ext_integration_v2.md` for operational use. Flipped `[[chat-adapter-system]]` and `[[llamacpp-local-provider]]` to `current`.
 
 ---
 
@@ -63,16 +64,16 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[chat-adapter-system]]`
 - **Category:** subsystem
-- **Source status:** `stale-needs-update`
+- **Source status:** `current`
 - **Summary:** Adapter registry (`src/brio_ext/registry.py`) with `QwenAdapter`, `LlamaAdapter`, `MistralAdapter`, `GemmaAdapter`, `PhiAdapter` — each renders messages into the model's native chat-template format (ChatML, Llama, Mistral) and declares its own stop tokens. Selection prefers `model_id` pattern matching, falls back to an explicit `chat_format` hint for custom-named models.
-- **Canonical source:** `docs/llama_cpp_test_specification.md` (Resolution Status section) frames the historical Qwen system-message bug that motivated adapters. The doc itself is Oct 2025, predates Phi adapter validation and the `no_think` migration to per-adapter ownership. The selection-logic-and-fallback rule lives only in `registry.py` docstrings.
+- **Canonical source:** `docs/llama_cpp_test_specification.md` (refreshed 2026-04-27) plus `docs/brio_ext_integration_v2.md` §9.6 (live status matrix). Test spec now correctly shows all five adapters validated; historical "🔴 FAILS / 🟡 NOT TESTED" badges are preserved with current ✅ marks alongside. The `model_id` → `chat_format` selection logic lives only in `registry.py` docstrings — that's a gap to be addressed by `[[adapter-driven-rendering]]` when authored, not a staleness in the source.
 - **Related:** `[[fencing-contract]]`, `[[adapter-driven-rendering]]`, `[[llamacpp-local-provider]]`, `[[no-think-mode]]`
 
 #### `[[llamacpp-local-provider]]`
 - **Category:** subsystem
-- **Source status:** `stale-needs-update`
+- **Source status:** `current`
 - **Summary:** `LlamaCppLanguageModel` — talks to a local llama.cpp HTTP server (default `http://127.0.0.1:8765`), maps `max_tokens` to the server's `n_predict`, extracts built-in `timings` (prompt_per_second, predicted_per_second), and produces both message-mode and prompt-mode payloads to match the active adapter.
-- **Canonical source:** `docs/llama_cpp_test_specification.md`. Status section is dated Oct 27 2025 and lists Phi-4-mini as "NOT TESTED YET", but `brio_ext_integration_v2.md` Status Matrix shows all seven test models green. Test-spec needs a refresh pass.
+- **Canonical source:** `docs/llama_cpp_test_specification.md` (refreshed 2026-04-27 — status badges updated, "Current Workaround (HACK)" marked as removed, top header points readers to `brio_ext_integration_v2.md` for current operational use).
 - **Related:** `[[chat-adapter-system]]`, `[[llamacpp-server-tiers]]`, `[[performance-metrics]]`
 
 #### `[[metrics-logger]]`
@@ -256,12 +257,11 @@ Ten wiki pages are blocked on missing `docs/` sources. Suggested authoring order
 
 ## Stale-needs-update: existing canonical docs requiring freshness review
 
-Four `docs/` files are still authoritative in shape but predate substantive changes. Refresh against current code/schema before treating as canonical wiki sources. (`docs/2025-12-20_Developer_Guide.md` and `docs/llm.md` were refreshed 2026-04-27 and are no longer stale.)
+Three `docs/` files are still authoritative in shape but predate substantive changes. Refresh against current code/schema before treating as canonical wiki sources. (`docs/2025-12-20_Developer_Guide.md`, `docs/llm.md`, and `docs/llama_cpp_test_specification.md` were refreshed 2026-04-27 and are no longer stale.)
 
 | File | Vintage | What's drifted | Wiki entries depending on it |
 |---|---|---|---|
 | `docs/brio_ext_integration.md` | 2026-03-01 mtime, but §10 explicitly marked superseded | Section 10 (llama.cpp test matrix) refers reader to `brio_ext_integration_v2.md`. The supersedence is awkward; sections 1–9 and 11 are still authoritative but a clean rewrite is overdue. The `register_with_factory` legacy patch path isn't explained. | `[[brio-ext-extension-package]]` |
-| `docs/llama_cpp_test_specification.md` | 2025-10-27 ("Production Ready") | Status matrix lists Phi-4-mini as "NOT TESTED YET" but `brio_ext_integration_v2.md` shows all seven test models green. Predates `start_server_v2.sh` migration. | `[[chat-adapter-system]]`, `[[llamacpp-local-provider]]` |
 | `docs/TRANSFORMERS_ADVANCED_FEATURES.md` | 2025-10-24 mtime | Reference shape is correct; the "Recommended Models" list and model-pattern chunk-size table may have drifted as new embedding models have been published. Needs a low-effort refresh pass. | `[[transformers-advanced-embedding]]` |
 | `docs/2025-12-20_Developer_Guide.md` (Design Principles depth) | refreshed 2026-04-27 but Design Principles still single-bullet | The "Pure HTTP" bullet states the design without justifying it. `[[http-only-architecture]]` needs the rationale (response-shape control, avoiding SDK breaking changes, smaller install surface) added either as an expanded subsection here or as a dedicated `docs/architecture/http-only-architecture.md`. | `[[http-only-architecture]]` |
 

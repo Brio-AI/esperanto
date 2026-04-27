@@ -2,9 +2,12 @@
 
 **Version:** 2.0
 **Date:** October 27, 2025
+**Last refreshed:** 2026-04-27 (against esperanto v2.8.1)
 **Purpose:** Comprehensive testing specification for brio-esperanto library integration with BrioDocs llama.cpp server
 
-**Status:** ✅ Core issues resolved. Qwen system message bug fixed via adapter-based architecture.
+**Status:** ✅ All historical issues resolved. The Qwen system-message bug, which motivated the original spec, was fixed via the adapter-based architecture in `brio_ext`. All seven currently-supported llama.cpp models pass the canonical test scenarios — see `docs/brio_ext_integration_v2.md` §9.6 for the live status matrix and §10 (Resolution Status) below for the historical record.
+
+> **Operational use:** for day-to-day server startup and test running, use `docs/brio_ext_integration_v2.md` (which documents the seven-model `start_server_v2.sh --tier <1-3> --model <1-7>` launcher and the four canonical test scenarios). This document remains useful as the **detailed test specification** — message structures, context-size cases, the historical bug repro, and root-cause analysis. Where the two diverge, v2 is canonical.
 
 ---
 
@@ -386,6 +389,8 @@ You are a specialized research assistant...
 
 ### Local Models (llama.cpp)
 
+> **Status badges in this section reflect the original Oct 2025 test campaign** — they are preserved for historical context. For the current pass/fail matrix, see `docs/brio_ext_integration_v2.md` §9.6, which covers all seven supported models (Qwen 2.5 7B/3B, Llama 3.1 8B, Llama 3.2 3B, Mistral 7B v0.3, Phi-4 Mini, Phi-4 Reasoning) — all green as of 2026-04-27. The raw `python -m llama_cpp.server` invocations below remain accurate; in practice you'll use `./scripts/start_server_v2.sh --tier <1-3> --model <1-7>` instead, which reads `fixtures/briodocs_config.yaml` for the equivalent flags.
+
 #### Qwen 2.5 7B Instruct
 ```bash
 # Download
@@ -402,8 +407,8 @@ python -m llama_cpp.server \
     --n_threads 8 \
     --chat_format chatml
 
-# Status
-🔴 FAILS - Ignores system messages completely
+# Status (Oct 2025): 🔴 FAILS — Ignored system messages completely
+# Status (2026-04-27): ✅ PASSES — fixed by QwenAdapter ChatML rendering
 ```
 
 #### Mistral 7B Instruct v0.3
@@ -422,11 +427,11 @@ python -m llama_cpp.server \
     --n_threads 8 \
     --chat_format mistral-instruct
 
-# Status
-🟡 UNKNOWN - Needs testing
+# Status (Oct 2025): 🟡 UNKNOWN — Needs testing
+# Status (2026-04-27): ✅ PASSES — MistralAdapter validated; system message at start of prompt (PR #4)
 ```
 
-#### Phi-4 (Future)
+#### Phi-4 Mini
 ```bash
 # Server startup
 python -m llama_cpp.server \
@@ -439,8 +444,8 @@ python -m llama_cpp.server \
     --n_threads 8 \
     --chat_format chatml
 
-# Status
-🟡 NOT TESTED YET
+# Status (Oct 2025): 🟡 NOT TESTED YET
+# Status (2026-04-27): ✅ PASSES — PhiAdapter validated for both Phi-4 Mini and Phi-4 Reasoning
 ```
 
 ### Cloud Models (Baseline - Working Correctly)
@@ -457,7 +462,9 @@ python -m llama_cpp.server \
 
 ---
 
-## The Bug
+## The Bug (historical)
+
+> This section describes the **original** Qwen system-message bug as it was understood in October 2025, before the adapter-based architecture landed. The bug is **resolved** — see §10 (Resolution Status) for what shipped. The minimal reproduction below now passes; it's preserved as a regression-test fixture, not as an active issue. The "Current Workaround (HACK)" subsection is also historical — no such workaround exists in the current code.
 
 ### Minimal Reproduction
 
@@ -502,16 +509,14 @@ POST http://localhost:8765/v1/chat/completions
 2. **brio-esperanto** may not be using the correct chat template renderer for Qwen
 3. **Qwen model itself** may be fine-tuned in a way that ignores system role
 
-### Current Workaround (HACK)
+### Current Workaround (HACK) — REMOVED
 
-We currently detect Qwen models and combine system + user messages into a single user message:
+> **Historical.** The original campaign used the workaround below to merge system + user messages for Qwen. It was removed when the adapter-based architecture landed (`QwenAdapter` now renders proper ChatML so system messages reach the model intact). No combine-into-user-message hack exists in the current code.
 
 ```python
-# HACK: Combine system + user messages for Qwen
-combined_content = system_content + "\n\n---\n\nUser question: " + user_content
+# (REMOVED) HACK: Combine system + user messages for Qwen
+# combined_content = system_content + "\n\n---\n\nUser question: " + user_content
 ```
-
-**This works but defeats the purpose of brio-esperanto!** We need the library to handle this correctly.
 
 ---
 
