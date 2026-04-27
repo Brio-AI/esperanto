@@ -22,8 +22,8 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 13 |
-| `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 2 |
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 14 |
+| `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 1 |
 | `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 11 |
 
 **Totals:** 26 entries (1 repo overview + 25 pages). 11 of 26 are blocked on a missing `docs/` source — concentrated around the brio_ext-layer architectural commitments (fencing contract, adapter-driven rendering, no_think semantics) that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today.
@@ -33,6 +33,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 - 2026-04-27: `docs/llm.md` refreshed against version 2.8.1 — added Vertex, brio_ext pointer, `response.timings`/`response.content` examples, and fixed the bogus `chunk.provider` reference in the streaming example. Flipped `[[multiprovider-llm-support]]` and (jointly with the dev guide refresh) `[[esperanto-core-library]]` to `current`.
 - 2026-04-27: `docs/llama_cpp_test_specification.md` refreshed — status badges now show both Oct 2025 (historical) and current ✅ marks for Qwen/Mistral/Phi-4; "The Bug" / "Current Workaround (HACK)" sections marked as historical with explicit "REMOVED" callouts; header points readers to `brio_ext_integration_v2.md` for operational use. Flipped `[[chat-adapter-system]]` and `[[llamacpp-local-provider]]` to `current`.
 - 2026-04-27: `docs/TRANSFORMERS_ADVANCED_FEATURES.md` refreshed — verified Recommended Models list and chunk-size table still match code; documented previously-missing `quantize`, `model_cache_dir`, and `device="auto"` auto-detection. Flipped `[[transformers-advanced-embedding]]` to `current`.
+- 2026-04-27: `docs/brio_ext_integration.md` refreshed — replaced 215-line superseded §10 with a clean redirect to v2 and the test spec; added §2.1 documenting `register_with_factory`; corrected real factual bugs (`LLAMACPP_BASE_URL` env var name, default port `8080` with v2 launcher caveat, `BRIO_USE_BRIO_FACTORY` removed as fictional, `<out>` fence framing fixed). Flipped `[[brio-ext-extension-package]]` to `current`.
 
 ---
 
@@ -58,9 +59,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[brio-ext-extension-package]]`
 - **Category:** subsystem
-- **Source status:** `stale-needs-update`
+- **Source status:** `current`
 - **Summary:** The `brio_ext` package — wraps `AIFactory` with `BrioAIFactory`, dispatches chat-template adapters, enforces `<out>...</out>` fencing on responses, logs JSONL metrics, and exposes a LangChain-compatible bridge. Adds two local providers (`llamacpp`, `hf_local`) on top of Esperanto's cloud-provider set.
-- **Canonical source:** `docs/brio_ext_integration.md` (sections 1–9 and 11) plus `docs/brio_ext_integration_v2.md` (which supersedes section 10). The integration doc is broadly current but the section-10-supersedence is awkward; a clean rewrite is overdue. The relationship between `BrioAIFactory.create_language` and `register_with_factory` (legacy patch path) isn't explained anywhere.
+- **Canonical source:** `docs/brio_ext_integration.md` (refreshed 2026-04-27) plus `docs/brio_ext_integration_v2.md`. §10 is now a clean redirect to v2 + the test spec. New §2.1 documents `register_with_factory`. Real factual corrections landed: `LLAMACPP_BASE_URL` (not `BRIO_LLAMACPP_BASE_URL`); default port `8080` with a port-mismatch caveat for the v2 launcher's `8765`; `BRIO_USE_BRIO_FACTORY` removed (it never existed in the codebase); the "stop tokens" framing of `<out>` fixed (it's a post-generation fence, not a stop sequence).
 - **Related:** `[[chat-adapter-system]]`, `[[fencing-contract]]`, `[[langchain-bridge]]`, `[[metrics-logger]]`
 
 #### `[[chat-adapter-system]]`
@@ -258,11 +259,10 @@ Ten wiki pages are blocked on missing `docs/` sources. Suggested authoring order
 
 ## Stale-needs-update: existing canonical docs requiring freshness review
 
-Two `docs/` files are still authoritative in shape but predate substantive changes. Refresh against current code/schema before treating as canonical wiki sources. (`docs/2025-12-20_Developer_Guide.md`, `docs/llm.md`, `docs/llama_cpp_test_specification.md`, and `docs/TRANSFORMERS_ADVANCED_FEATURES.md` were refreshed 2026-04-27 and are no longer stale.)
+One `docs/` file is still authoritative in shape but predates substantive changes. (`docs/2025-12-20_Developer_Guide.md`, `docs/llm.md`, `docs/llama_cpp_test_specification.md`, `docs/TRANSFORMERS_ADVANCED_FEATURES.md`, and `docs/brio_ext_integration.md` were all refreshed 2026-04-27 and are no longer stale.)
 
 | File | Vintage | What's drifted | Wiki entries depending on it |
 |---|---|---|---|
-| `docs/brio_ext_integration.md` | 2026-03-01 mtime, but §10 explicitly marked superseded | Section 10 (llama.cpp test matrix) refers reader to `brio_ext_integration_v2.md`. The supersedence is awkward; sections 1–9 and 11 are still authoritative but a clean rewrite is overdue. The `register_with_factory` legacy patch path isn't explained. | `[[brio-ext-extension-package]]` |
 | `docs/2025-12-20_Developer_Guide.md` (Design Principles depth) | refreshed 2026-04-27 but Design Principles still single-bullet | The "Pure HTTP" bullet states the design without justifying it. `[[http-only-architecture]]` needs the rationale (response-shape control, avoiding SDK breaking changes, smaller install surface) added either as an expanded subsection here or as a dedicated `docs/architecture/http-only-architecture.md`. | `[[http-only-architecture]]` |
 
 ## Stale documentation moved to `docs/_OLD/`
