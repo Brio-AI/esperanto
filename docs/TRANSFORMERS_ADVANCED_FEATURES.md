@@ -1,5 +1,7 @@
 # Transformers Advanced Features
 
+**Last refreshed:** 2026-04-27 against esperanto v2.8.1. The "Recommended Models" list and the model-pattern chunk-size table below still reflect the current `_configure_model_specific_settings()` and `models` property in `src/esperanto/providers/embedding/transformers.py`.
+
 The Esperanto Transformers provider now supports advanced embedding features that were previously only available through cloud providers. These features provide privacy-first alternatives with complete local processing.
 
 ## Overview
@@ -169,8 +171,24 @@ print(len(embeddings[0]))  # 512
 | `late_chunking` | `bool` | `False` | Enable intelligent chunking |
 | `output_dimensions` | `int` | `None` | Target embedding dimensions |
 | `truncate_at_max_length` | `bool` | `True` | Truncate inputs at model limit |
-| `device` | `str` | `"auto"` | Computation device |
-| `pooling_strategy` | `str` | `"mean"` | Embedding pooling method |
+| `device` | `str` | `"auto"` | Computation device — see auto-detection below |
+| `pooling_strategy` | `Literal["mean", "max", "cls"]` | `"mean"` | Embedding pooling method |
+| `quantize` | `Literal["4bit", "8bit"]` | `None` | Quantization mode (requires `bitsandbytes`) |
+| `model_cache_dir` | `str` | `None` | Override `TRANSFORMERS_CACHE` directory |
+
+### Device auto-detection
+
+When `device="auto"` (the default), the provider picks the first available backend in this order:
+
+1. `cuda` — if `torch.cuda.is_available()`
+2. `mps` — if `torch.backends.mps.is_available()` (Apple Silicon)
+3. `cpu` — fallback
+
+Override with an explicit string (`"cpu"`, `"cuda"`, `"mps"`) when you need to force a specific backend, e.g., for memory-constrained dev machines.
+
+### Quantization
+
+Set `quantize="4bit"` or `quantize="8bit"` to load the model with `bitsandbytes` quantization. Useful for fitting Qwen3-Embedding-4B on consumer GPUs. Requires `pip install bitsandbytes` separately — the package is not bundled with `esperanto[transformers]`.
 
 ## Error Handling
 

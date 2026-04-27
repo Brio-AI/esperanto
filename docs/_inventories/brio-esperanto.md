@@ -22,8 +22,8 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 12 |
-| `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 3 |
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 13 |
+| `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 2 |
 | `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 11 |
 
 **Totals:** 26 entries (1 repo overview + 25 pages). 11 of 26 are blocked on a missing `docs/` source — concentrated around the brio_ext-layer architectural commitments (fencing contract, adapter-driven rendering, no_think semantics) that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today.
@@ -32,6 +32,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 - 2026-04-27: `docs/2025-12-20_Developer_Guide.md` refreshed against version 2.8.1 — flipped `[[brio-esperanto]]` and `[[provider-normalization-pattern]]` to `current`.
 - 2026-04-27: `docs/llm.md` refreshed against version 2.8.1 — added Vertex, brio_ext pointer, `response.timings`/`response.content` examples, and fixed the bogus `chunk.provider` reference in the streaming example. Flipped `[[multiprovider-llm-support]]` and (jointly with the dev guide refresh) `[[esperanto-core-library]]` to `current`.
 - 2026-04-27: `docs/llama_cpp_test_specification.md` refreshed — status badges now show both Oct 2025 (historical) and current ✅ marks for Qwen/Mistral/Phi-4; "The Bug" / "Current Workaround (HACK)" sections marked as historical with explicit "REMOVED" callouts; header points readers to `brio_ext_integration_v2.md` for operational use. Flipped `[[chat-adapter-system]]` and `[[llamacpp-local-provider]]` to `current`.
+- 2026-04-27: `docs/TRANSFORMERS_ADVANCED_FEATURES.md` refreshed — verified Recommended Models list and chunk-size table still match code; documented previously-missing `quantize`, `model_cache_dir`, and `device="auto"` auto-detection. Flipped `[[transformers-advanced-embedding]]` to `current`.
 
 ---
 
@@ -184,9 +185,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[transformers-advanced-embedding]]`
 - **Category:** feature
-- **Source status:** `stale-needs-update`
-- **Summary:** Local-only embedding features in the `transformers` provider — task-aware prefixes (8 task types from `EmbeddingTaskType`), late chunking with semantic boundary detection, output-dimension control via PCA reduction or zero-padding expansion, model-aware chunk-size limits.
-- **Canonical source:** `docs/TRANSFORMERS_ADVANCED_FEATURES.md`. Oct 2025 vintage; references match current code shape but the "Recommended Models" list and the model-pattern chunk-size table may have drifted.
+- **Source status:** `current`
+- **Summary:** Local-only embedding features in the `transformers` provider — task-aware prefixes (8 task types from `EmbeddingTaskType`), late chunking with semantic boundary detection, output-dimension control via PCA reduction or zero-padding expansion, model-aware chunk-size limits, optional 4-bit/8-bit quantization via `bitsandbytes`.
+- **Canonical source:** `docs/TRANSFORMERS_ADVANCED_FEATURES.md` (refreshed 2026-04-27). Verified that the chunk-size table and Recommended Models list still match the live `_configure_model_specific_settings()` and `models` property; added documentation for the `quantize` and `model_cache_dir` parameters and the `device="auto"` cuda/mps/cpu detection logic, all of which had been missing.
 - **Related:** `[[esperanto-core-library]]`, `[[provider-normalization-pattern]]`
 
 #### `[[performance-metrics]]`
@@ -257,12 +258,11 @@ Ten wiki pages are blocked on missing `docs/` sources. Suggested authoring order
 
 ## Stale-needs-update: existing canonical docs requiring freshness review
 
-Three `docs/` files are still authoritative in shape but predate substantive changes. Refresh against current code/schema before treating as canonical wiki sources. (`docs/2025-12-20_Developer_Guide.md`, `docs/llm.md`, and `docs/llama_cpp_test_specification.md` were refreshed 2026-04-27 and are no longer stale.)
+Two `docs/` files are still authoritative in shape but predate substantive changes. Refresh against current code/schema before treating as canonical wiki sources. (`docs/2025-12-20_Developer_Guide.md`, `docs/llm.md`, `docs/llama_cpp_test_specification.md`, and `docs/TRANSFORMERS_ADVANCED_FEATURES.md` were refreshed 2026-04-27 and are no longer stale.)
 
 | File | Vintage | What's drifted | Wiki entries depending on it |
 |---|---|---|---|
 | `docs/brio_ext_integration.md` | 2026-03-01 mtime, but §10 explicitly marked superseded | Section 10 (llama.cpp test matrix) refers reader to `brio_ext_integration_v2.md`. The supersedence is awkward; sections 1–9 and 11 are still authoritative but a clean rewrite is overdue. The `register_with_factory` legacy patch path isn't explained. | `[[brio-ext-extension-package]]` |
-| `docs/TRANSFORMERS_ADVANCED_FEATURES.md` | 2025-10-24 mtime | Reference shape is correct; the "Recommended Models" list and model-pattern chunk-size table may have drifted as new embedding models have been published. Needs a low-effort refresh pass. | `[[transformers-advanced-embedding]]` |
 | `docs/2025-12-20_Developer_Guide.md` (Design Principles depth) | refreshed 2026-04-27 but Design Principles still single-bullet | The "Pure HTTP" bullet states the design without justifying it. `[[http-only-architecture]]` needs the rationale (response-shape control, avoiding SDK breaking changes, smaller install surface) added either as an expanded subsection here or as a dedicated `docs/architecture/http-only-architecture.md`. | `[[http-only-architecture]]` |
 
 ## Stale documentation moved to `docs/_OLD/`
