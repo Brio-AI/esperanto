@@ -91,6 +91,8 @@ dmypy.json
 .env.*
 !.env.example
 
+# .mcp.json IS committed (declares MCP servers; uses ${ENV_VAR} refs)
+
 # Distribution / packaging
 *.manifest
 *.spec
