@@ -1,6 +1,10 @@
 # Language Models
 
+**Last refreshed:** 2026-04-27 against esperanto v2.8.1.
+
 Language models (LLMs) are AI systems that can understand and generate human-like text. Esperanto provides a unified interface for working with various language model providers, allowing you to perform tasks like chat completion, text generation, and structured output generation across different AI models.
+
+> **For BrioDocs developers:** this page covers the upstream `esperanto.AIFactory` API. BrioDocs imports `BrioAIFactory` from `brio_ext.factory` instead — same call surface, but it adds local-model providers (`llamacpp`, `hf_local`), `<out>...</out>` response fencing, chat-template adapters, and metrics logging. Everything documented here applies to both factories. See `docs/brio_ext_integration.md` and `docs/2025-12-20_Developer_Guide.md` for the brio_ext layer.
 
 ## Supported Providers
 
@@ -14,6 +18,7 @@ Language models (LLMs) are AI systems that can understand and generate human-lik
 - **xAI** (Grok)
 - **Perplexity** (Sonar models with web search)
 - **Azure OpenAI** (Azure-hosted OpenAI models)
+- **Vertex** (Google Cloud Vertex AI: Gemini, Anthropic-on-Vertex)
 - **Mistral** (Mistral Large, Small, etc.)
 - **DeepSeek** (deepseek-chat)
 
@@ -37,20 +42,26 @@ All language models return standardized response objects:
 ```python
 response = model.chat_complete(messages)
 # Access attributes:
+response.content                     # Shortcut: choices[0].message.content
 response.choices[0].message.content  # The response text
 response.choices[0].message.role     # 'assistant'
 response.model                       # Model used
 response.provider                    # Provider name
 response.usage.total_tokens          # Token usage
+response.timings.tokens_per_second   # Generation speed (when available)
+response.timings.total_time_ms       # Wall-clock request time (when available)
 ```
+
+`response.timings` is populated for local llama.cpp models from the server's built-in `timings` block, and calculated from wall-clock for cloud providers. See `docs/2025-12-08 Performance Metrics Implementation.md`.
 
 ### Streaming Response
 ```python
 for chunk in model.chat_complete(messages, stream=True):
     chunk.choices[0].delta.content   # Partial response text
     chunk.model                      # Model used
-    chunk.provider                   # Provider name
 ```
+
+`ChatCompletionChunk` does not carry a `provider` field — that's only on the non-streaming `ChatCompletion`. To measure time-to-first-token while streaming, capture `time.perf_counter()` before the loop and at the first chunk.
 
 ## Examples
 
