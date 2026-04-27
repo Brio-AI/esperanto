@@ -22,11 +22,14 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 6 |
-| `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 6 |
-| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 10 |
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 8 |
+| `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 7 |
+| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 11 |
 
-**Totals:** 22 entries (1 repo overview + 21 pages). 10 of 22 are blocked on a missing `docs/` source — concentrated around the brio_ext-layer architectural commitments (fencing contract, adapter-driven rendering, no_think semantics) that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today.
+**Totals:** 26 entries (1 repo overview + 25 pages). 11 of 26 are blocked on a missing `docs/` source — concentrated around the brio_ext-layer architectural commitments (fencing contract, adapter-driven rendering, no_think semantics) that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today.
+
+**Refresh log:**
+- 2026-04-27: `docs/2025-12-20_Developer_Guide.md` refreshed against version 2.8.1 — flipped `[[brio-esperanto]]` and `[[provider-normalization-pattern]]` to `current`. `[[esperanto-core-library]]` and `[[http-only-architecture]]` remain stale (cite `llm.md` / depth issues respectively).
 
 ---
 
@@ -36,9 +39,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[brio-esperanto]]`
 - **Category:** repo overview
-- **Source status:** `stale-needs-update`
+- **Source status:** `current`
 - **Summary:** Python library providing a unified interface for 15+ AI providers (LLM, embedding, reranker, STT, TTS) plus a BrioDocs-specific extension layer (`brio_ext`) that adds chat-template adapters, `<out>` fencing, metrics, and LangChain compatibility. Consumed by BrioDocs as a git submodule, pinned by tag.
-- **Canonical source:** `docs/2025-12-20_Developer_Guide.md`. Stamps version 2.7.1; current `pyproject.toml` is 2.8.0. Doesn't reflect: the `start_server_v2.sh` tier-based launcher, the `no_think` parameter migration from factory to adapters (commit e520800), or the streaming fence-extraction fix (commit 1855de0).
+- **Canonical source:** `docs/2025-12-20_Developer_Guide.md`. Refreshed 2026-04-27 against version 2.8.1; now reflects the `start_server_v2.sh` tier-based launcher, the `no_think` parameter on `create_langchain_wrapper`, the streaming fence-extraction wiring, and the full `ChatCompletion`/`Timings` shape.
 - **Related:** `[[esperanto-core-library]]`, `[[brio-ext-extension-package]]`, `[[briodocs-submodule-integration]]`
 
 ### Subsystems
@@ -47,7 +50,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 - **Category:** subsystem
 - **Source status:** `stale-needs-update`
 - **Summary:** The `esperanto` package — provider implementations for 15+ LLMs (OpenAI, Anthropic, Google, Groq, Ollama, OpenRouter, xAI, Perplexity, Azure, Mistral, DeepSeek, Vertex, plus `openai-compatible` for self-hosted endpoints) plus embedding, reranker, STT, and TTS providers behind a single `AIFactory`.
-- **Canonical source:** `docs/2025-12-20_Developer_Guide.md` (Project Structure + Registry Architecture sections) plus `docs/llm.md`. Same staleness as the repo overview; `llm.md` is Oct 2025 vintage and doesn't reflect the `Timings` response field or the recent xAI/DeepSeek normalization passes.
+- **Canonical source:** `docs/2025-12-20_Developer_Guide.md` (Project Structure + Registry Architecture sections; refreshed 2026-04-27) plus `docs/llm.md`. The dev guide is current; `llm.md` is still Oct 2025 vintage and doesn't reflect the `Timings` response field or the recent xAI/DeepSeek normalization passes — the entry stays stale until `llm.md` is refreshed.
 - **Related:** `[[provider-registry-pattern]]`, `[[provider-normalization-pattern]]`, `[[multiprovider-llm-support]]`, `[[http-only-architecture]]`
 
 #### `[[brio-ext-extension-package]]`
@@ -119,9 +122,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[provider-normalization-pattern]]`
 - **Category:** architecture
-- **Source status:** `stale-needs-update`
+- **Source status:** `current`
 - **Summary:** All providers must convert vendor-specific responses into the shared `ChatCompletion` / `Message` / `Choice` / `Usage` / `Timings` Pydantic models before returning. This is the library's core value proposition — consumers code against one shape regardless of provider.
-- **Canonical source:** `docs/2025-12-20_Developer_Guide.md` (Common Types Reference and Design Principles sections). The `Timings` field was added in 2.7.x but the developer-guide ChatCompletion definition still doesn't list it; refresh against `src/esperanto/common_types/response.py`.
+- **Canonical source:** `docs/2025-12-20_Developer_Guide.md` (Common Types Reference and Design Principles sections, refreshed 2026-04-27 against `src/esperanto/common_types/response.py`). Now lists the full `ChatCompletion` shape (including `provider`, `timings`, `object`, the `content` shortcut) and a dedicated `Timings` class definition.
 - **Related:** `[[provider-registry-pattern]]`, `[[multiprovider-llm-support]]`, `[[fencing-contract]]`
 
 #### `[[adapter-driven-rendering]]`
@@ -252,15 +255,15 @@ Ten wiki pages are blocked on missing `docs/` sources. Suggested authoring order
 
 ## Stale-needs-update: existing canonical docs requiring freshness review
 
-Six entries cite four `docs/` files that are still authoritative in shape but predate substantive changes. Refresh against current code/schema before treating as canonical wiki sources.
+Five `docs/` files are still authoritative in shape but predate substantive changes. Refresh against current code/schema before treating as canonical wiki sources. (`docs/2025-12-20_Developer_Guide.md` was refreshed 2026-04-27 and is no longer stale.)
 
 | File | Vintage | What's drifted | Wiki entries depending on it |
 |---|---|---|---|
-| `docs/2025-12-20_Developer_Guide.md` | 2025-12-20 (mtime 2026-03-01) | Stamps version 2.7.1; current `pyproject.toml` is 2.8.0. Doesn't reflect the `start_server_v2.sh` tier launcher, the `no_think` migration to adapters (commit e520800), the streaming fence-extraction fix (commit 1855de0), or the `Timings` response field in the Common Types Reference. | `[[brio-esperanto]]`, `[[esperanto-core-library]]`, `[[provider-normalization-pattern]]`, `[[http-only-architecture]]` |
 | `docs/brio_ext_integration.md` | 2026-03-01 mtime, but §10 explicitly marked superseded | Section 10 (llama.cpp test matrix) refers reader to `brio_ext_integration_v2.md`. The supersedence is awkward; sections 1–9 and 11 are still authoritative but a clean rewrite is overdue. The `register_with_factory` legacy patch path isn't explained. | `[[brio-ext-extension-package]]` |
-| `docs/llm.md` | 2025-10-24 mtime | Provider list correct but predates the `Timings` field, recent streaming-response normalization, and any mention of brio_ext layering. Reads as if Esperanto is the whole story; new readers miss that BrioDocs uses `BrioAIFactory`, not `AIFactory`. | `[[multiprovider-llm-support]]` |
+| `docs/llm.md` | 2025-10-24 mtime | Provider list correct but predates the `Timings` field, recent streaming-response normalization, and any mention of brio_ext layering. Reads as if Esperanto is the whole story; new readers miss that BrioDocs uses `BrioAIFactory`, not `AIFactory`. | `[[esperanto-core-library]]` (joint with refreshed dev guide), `[[multiprovider-llm-support]]` |
 | `docs/llama_cpp_test_specification.md` | 2025-10-27 ("Production Ready") | Status matrix lists Phi-4-mini as "NOT TESTED YET" but `brio_ext_integration_v2.md` shows all seven test models green. Predates `start_server_v2.sh` migration. | `[[chat-adapter-system]]`, `[[llamacpp-local-provider]]` |
 | `docs/TRANSFORMERS_ADVANCED_FEATURES.md` | 2025-10-24 mtime | Reference shape is correct; the "Recommended Models" list and model-pattern chunk-size table may have drifted as new embedding models have been published. Needs a low-effort refresh pass. | `[[transformers-advanced-embedding]]` |
+| `docs/2025-12-20_Developer_Guide.md` (Design Principles depth) | refreshed 2026-04-27 but Design Principles still single-bullet | The "Pure HTTP" bullet states the design without justifying it. `[[http-only-architecture]]` needs the rationale (response-shape control, avoiding SDK breaking changes, smaller install surface) added either as an expanded subsection here or as a dedicated `docs/architecture/http-only-architecture.md`. | `[[http-only-architecture]]` |
 
 ## Stale documentation moved to `docs/_OLD/`
 

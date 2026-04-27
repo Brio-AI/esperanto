@@ -1,7 +1,8 @@
 # Esperanto Developer Guide
 
 **Date:** 2025-12-20
-**Version:** 2.7.1
+**Last refreshed:** 2026-04-27
+**Version:** 2.8.1
 
 ---
 
@@ -567,26 +568,34 @@ def test_something(mock_client):
 
 ## Common Types Reference
 
+Defined in `src/esperanto/common_types/response.py`. All response models are frozen Pydantic.
+
 ### ChatCompletion
 
 ```python
 class ChatCompletion(BaseModel):
     id: str
     choices: List[Choice]
-    usage: Optional[Usage]
-    timings: Optional[Timings]
-    model: Optional[str]
-    created: Optional[int]
+    model: str
+    provider: str
+    created: Optional[int] = None
+    usage: Optional[Usage] = None
+    timings: Optional[Timings] = None
+    object: str = "chat.completion"
+
+    @property
+    def content(self) -> str:
+        """Shortcut for choices[0].message.content."""
 ```
 
 ### Message
 
 ```python
 class Message(BaseModel):
-    content: Optional[str]
-    role: str  # "system", "user", "assistant"
-    function_call: Optional[Dict[str, Any]]
-    tool_calls: Optional[List[Dict[str, Any]]]
+    content: Optional[str] = None
+    role: Optional[str] = None  # "system", "user", "assistant"
+    function_call: Optional[Dict[str, Any]] = None
+    tool_calls: Optional[List[Dict[str, Any]]] = None
 ```
 
 ### Usage
@@ -597,6 +606,18 @@ class Usage(BaseModel):
     completion_tokens: int
     total_tokens: int
 ```
+
+### Timings
+
+```python
+class Timings(BaseModel):
+    ttft_ms: Optional[float] = None              # streaming only
+    tokens_per_second: Optional[float] = None
+    prompt_tokens_per_second: Optional[float] = None
+    total_time_ms: Optional[float] = None
+```
+
+For local llama.cpp models, `tokens_per_second` and `prompt_tokens_per_second` come from the server's built-in `timings` block. For cloud providers, `total_time_ms` is the wall-clock value and `tokens_per_second` is calculated. See `docs/2025-12-08 Performance Metrics Implementation.md` for the full pipeline.
 
 ---
 
@@ -630,11 +651,24 @@ result = await lc_model.ainvoke(messages)
 # result.content is clean text (no <out> tags, no <think> content)
 ```
 
-The `BrioLangChainWrapper` (in `src/brio_ext/langchain_wrapper.py`):
+For finer control — including `no_think` mode and streaming — use `create_langchain_wrapper`:
+
+```python
+from brio_ext.factory import BrioAIFactory, create_langchain_wrapper
+
+model = BrioAIFactory.create_language("llamacpp", "qwen2.5-7b-instruct", config={...})
+lc_model = create_langchain_wrapper(model, no_think=True)
+
+async for chunk in lc_model.astream(messages):
+    print(chunk.content, end="", flush=True)
+```
+
+The `BrioBaseChatModel` / `BrioLangChainWrapper` (in `src/brio_ext/langchain_wrapper.py`):
 - Calls brio_ext's `chat_complete()` preserving the full rendering pipeline
-- Strips `<out>...</out>` fencing from responses
-- Handles `<think>` tags from reasoning models that wrap all output in think tags
+- Strips `<out>...</out>` fencing from responses (both non-streaming and streaming, via `StreamingFenceFilter`)
+- Handles `<think>` tags from reasoning models via `StreamingThinkTagFilter`
 - Converts LangChain message types (HumanMessage, SystemMessage) to brio_ext format
+- Optionally prepends `/no_think` to the first user message — set `no_think=True` for Qwen3/Qwen3.5 on Tier 2/3 where the token budget cannot accommodate a full reasoning block plus an answer
 - Returns `_AIMessage` objects compatible with LangChain/LangGraph
 
 ---
@@ -647,7 +681,10 @@ The `BrioLangChainWrapper` (in `src/brio_ext/langchain_wrapper.py`):
 | Add embedding provider | `src/esperanto/providers/embedding/` + register in `factory.py` |
 | Add chat adapter | `src/brio_ext/adapters/` + register in `registry.py` |
 | Modify factory logic | `src/esperanto/factory.py` or `src/brio_ext/factory.py` |
-| Use LangChain wrapper | `model.to_langchain()` or `src/brio_ext/langchain_wrapper.py` |
+| Use LangChain wrapper | `model.to_langchain()` or `create_langchain_wrapper(model, no_think=...)` |
 | Add common types | `src/esperanto/common_types/` |
 | Configure timeouts | `src/esperanto/utils/timeout.py` |
 | Add metrics | `src/brio_ext/metrics/logger.py` |
+| Run local llama.cpp server | `./scripts/start_server_v2.sh --tier <1-3> --model <1-7>` |
+| Configure server tiers | `fixtures/briodocs_config.yaml` (see `docs/brio_ext_integration_v2.md`) |
+| Cut a release | bump `pyproject.toml` version → commit → `git tag vX.Y.Z` → `git push origin vX.Y.Z` |
