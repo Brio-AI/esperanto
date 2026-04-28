@@ -22,11 +22,11 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 18 |
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 19 |
 | `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 1 |
-| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 7 |
+| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 6 |
 
-**Totals:** 26 entries (1 repo overview + 25 pages). 7 of 26 are blocked on a missing `docs/` source — the brio_ext-layer architectural commitments and operational discipline that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today.
+**Totals:** 26 entries (1 repo overview + 25 pages). 6 of 26 are blocked on a missing `docs/` source. The architecture-layer set (`[[fencing-contract]]`, `[[adapter-driven-rendering]]`, `[[provider-registry-pattern]]`, `[[chat-completion-pipeline]]`) plus the discipline pair (`[[client-contract-fencing]]`) are now all current — the remaining six are flows, concepts, and operational docs that build on these.
 
 **Refresh log:**
 - 2026-04-27: `docs/2025-12-20_Developer_Guide.md` refreshed against version 2.8.1 — flipped `[[brio-esperanto]]` and `[[provider-normalization-pattern]]` to `current`.
@@ -40,6 +40,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 - 2026-04-27: `docs/concepts/client-contract-fencing.md` authored. Concept-level pair to `[[fencing-contract]]`: treats the fence as a versioned API contract rather than a format choice. Covers the silent-failure mode across the Esperanto ↔ BrioDocs boundary, what counts as breaking (illustrative table), the three implications of the discipline (tests assert directly, breaking changes need a coordination beat, provider parity is structural), and the sibling pattern in BrioRegistry. Flipped `[[client-contract-fencing]]` to `current`.
 - 2026-04-27: `docs/architecture/adapter-driven-rendering.md` authored. Documents the transport/rendering split that resolved the historic Qwen system-message bug. Covers the two render modes (`messages` vs. `prompt`), the three-branch dispatch logic in `render_for_model`, separation of concerns (provider HTTP knowledge vs. adapter chat-template knowledge), the model_id → chat_format → no-match resolution chain, how to add a new provider (and when to add it to `TEMPLATE_PROVIDERS` vs. `PROMPT_PROVIDERS`), how to add a new adapter, and why the split is structurally enforced (adapters live in brio_ext only). Flipped `[[adapter-driven-rendering]]` to `current`.
 - 2026-04-27: `docs/architecture/provider-registry.md` authored. Documents the strings-not-imports `_provider_modules` registry, why lazy `importlib` lookup matters for optional-dependency-heavy providers, the precise-error rewriting in `_import_provider_class`, the `deepcopy + explicit re-merge` pattern `BrioAIFactory` uses to extend the registry without leaking changes back to upstream, the `register_with_factory` legacy patch path (and the deliberate fact that it does NOT extend the registry), and what the design deliberately doesn't include (no plugin discovery, no runtime registration, no failover). Flipped `[[provider-registry-pattern]]` to `current`.
+- 2026-04-27: `docs/architecture/chat-completion-pipeline.md` authored. Capstone for the architecture set — names the five stages (registry lookup, wrap, render, call, fence) plus the side-stage (metrics), shows the end-to-end call sequence, and points each stage to its owner doc. Documents `_stop_config_guard` as the smallest-invasive scope for per-call stop-token overrides; explains the async path's graceful degradation when a provider lacks an async variant. Flipped `[[chat-completion-pipeline]]` to `current`.
 
 ---
 
@@ -95,9 +96,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[chat-completion-pipeline]]`
 - **Category:** flow
-- **Source status:** `missing`
+- **Source status:** `current`
 - **Summary:** End-to-end path of a `chat_complete` call through `BrioAIFactory` — `_wrap_language_model` injects an adapter, `render_for_model` produces either a `messages` payload (for chat-template providers like OpenAI/Anthropic) or a `prompt` payload (for prompt-mode providers like llamacpp/hf_local), the underlying provider executes, and `_ensure_fenced_completion` re-fences the response in `<out>...</out>` after stripping any model-emitted tags and trailing incomplete special tokens.
-- **Canonical source:** Needs `docs/architecture/chat-completion-pipeline.md`. The flow exists across `brio_ext/factory.py`, `brio_ext/renderer.py`, and `brio_ext/adapters/*` but is never described as a single pipeline. The render-mode split (`TEMPLATE_PROVIDERS` vs. `PROMPT_PROVIDERS`) and the `_stop_config_guard` mechanism are particularly under-documented.
+- **Canonical source:** `docs/architecture/chat-completion-pipeline.md` (authored 2026-04-27). Capstone for the architecture set: names the five stages (registry lookup, wrap, render, call, fence) plus the side-stage (metrics), shows the call sequence end-to-end, and points each stage to its owner doc. Documents `_stop_config_guard` as the smallest-invasive scope for per-call stop-token overrides, and explains the async path's graceful degradation when a provider lacks an async variant.
 - **Related:** `[[adapter-driven-rendering]]`, `[[fencing-contract]]`, `[[chat-adapter-system]]`
 
 #### `[[langchain-bridge-flow]]`
@@ -247,13 +248,13 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 ## Backlog: missing canonical docs
 
-Seven wiki pages remain blocked on missing `docs/` sources. Suggested authoring order — earlier docs serve as foundation for later ones:
+Six wiki pages remain blocked on missing `docs/` sources. Suggested authoring order — earlier docs serve as foundation for later ones:
 
 1. ~~**`docs/architecture/fencing-contract.md`**~~ — ✅ authored 2026-04-27.
 2. ~~**`docs/concepts/client-contract-fencing.md`**~~ — ✅ authored 2026-04-27.
 3. ~~**`docs/architecture/adapter-driven-rendering.md`**~~ — ✅ authored 2026-04-27.
 4. ~~**`docs/architecture/provider-registry.md`**~~ — ✅ authored 2026-04-27.
-5. **`docs/architecture/chat-completion-pipeline.md`** — render → call → fence flow tying together the previous architecture docs.
+5. ~~**`docs/architecture/chat-completion-pipeline.md`**~~ — ✅ authored 2026-04-27.
 6. **`docs/flows/streaming-completion.md`** — the streaming path including the recent fence-extraction fix and TTFT capture.
 7. **`docs/flows/langchain-bridge.md`** — `to_langchain()` vs. full `BrioBaseChatModel` and how `no_think` threads through.
 8. **`docs/concepts/no-think-mode.md`** — what `/no_think` does, why it now lives on adapters instead of the factory.
