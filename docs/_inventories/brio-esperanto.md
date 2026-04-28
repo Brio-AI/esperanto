@@ -22,11 +22,11 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 23 |
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 24 |
 | `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 1 |
-| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 2 |
+| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 1 |
 
-**Totals:** 26 entries (1 repo overview + 25 pages). 2 of 26 are blocked on a missing `docs/` source.
+**Totals:** 26 entries (1 repo overview + 25 pages). 1 of 26 is blocked on a missing `docs/` source — `[[briodocs-submodule-integration]]`, which is naturally cross-cutting and best authored jointly with the BrioDocs agent.
 
 **Refresh log:**
 - 2026-04-27: `docs/2025-12-20_Developer_Guide.md` refreshed against version 2.8.1 — flipped `[[brio-esperanto]]` and `[[provider-normalization-pattern]]` to `current`.
@@ -45,6 +45,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 - 2026-04-27: `docs/flows/langchain-bridge.md` authored. Documents the two implementation classes (`BrioBaseChatModel` recommended; `BrioLangChainWrapper` legacy and frozen), the three entry points all returning `BrioBaseChatModel` (`model.to_langchain()`, `create_langchain_wrapper(...)`, direct construction), the invoke vs. stream call paths, the `no_think` threading from constructor → `chat_complete` → adapter render, and the four cases `_parse_fenced_content` handles (normal, unclosed `<think>`, all-think with JSON-extraction fallback, empty-after-cleaning). Flipped `[[langchain-bridge-flow]]` to `current`.
 - 2026-04-27: `docs/concepts/no-think-mode.md` authored. Documents the `no_think` flag's budget-pressure motivation, the trade-off (lower-quality reasoning vs. empty/truncated output), why it lives on per-adapter ownership (commit e520800 — Qwen prefills `<think></think>`, Gemma 4 omits the `<|think|>` marker, Llama/Mistral/Phi accept-and-ignore), the end-to-end threading through chat_complete and render_for_model, defaults across all four entry points, common patterns (tier-aware default, per-call override), and what it does NOT do (doesn't strip emitted tags, doesn't apply to cloud providers, doesn't gate on capability). Flipped `[[no-think-mode]]` to `current`.
 - 2026-04-27: `docs/concepts/tier-based-server-config.md` authored. Documents the orthogonal split between tier (HOW to run — context window, GPU layers, threads, mlock) and model (WHAT to run — GGUF file, chat format), the three tier definitions and seven model selections from `briodocs_config.yaml` and `start_server_v2.sh`, why the earlier coupled-script design was wrong, productivity vs. correctness of pairs (e.g., Tier 3 + Phi-4 Reasoning is allowed but unproductive), how tier cascades into application behavior (no_think defaults, candidate_count, max_tokens), what tier does NOT mean (not quality, not class, not provider, not temperature), and why both the local server and BrioDocs share the YAML. Flipped `[[tier-based-server-config]]` to `current`.
+- 2026-04-27: `docs/operational/release-tagging.md` authored. Documents the seven-step release flow (`/esperanto-release` slash command), the major/minor/patch decision table with examples drawn from real changes shipped earlier this week (the streaming fence-extraction fix as a patch; provider additions as minor; `<out>` fence renames as major), two heuristics for the hard "additive vs. breaking" call ("would a build pinned to the previous tag still work?" and "can existing extraction code fail?"), the five-step coordination beat for major bumps (cut tag → notify → BrioDocs updates extraction code in same PR as submodule bump → CI re-runs → merge together), why `pyproject.toml` + `uv.lock` must stay in sync, and what `/esperanto-release` does NOT enforce (the bump decision and the coordination beat both need human judgment). Flipped `[[release-tagging-discipline]]` to `current`.
 
 ---
 
@@ -236,9 +237,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[release-tagging-discipline]]`
 - **Category:** operational
-- **Source status:** `missing`
-- **Summary:** Cutting a release: bump `pyproject.toml` version → commit → `git tag vX.Y.Z` → push tag → BrioDocs submodule pointer can pin to the tag. The `/esperanto-release` slash command automates the version bump. Every tag is a frozen API surface that BrioDocs may pin against — breaking changes need a major bump and a coordination beat with the BrioDocs team.
-- **Canonical source:** Needs `docs/operational/release-tagging.md`. The mechanism is described in the developer guide's "Versioning" subsection (one paragraph), but the *discipline* — what counts as breaking, when to coordinate, how the `/esperanto-release` skill fits — is not written down.
+- **Source status:** `current`
+- **Summary:** Cutting a release: bump `pyproject.toml` version → `uv sync --all-extras` → commit (both files) → push to main → tag → push tag → `gh release create` (Actions publishes to PyPI). The `/esperanto-release` slash command automates the seven-step flow. Every tag is a frozen API surface that BrioDocs may pin against — breaking changes need a major bump and a coordination beat with the BrioDocs team.
+- **Canonical source:** `docs/operational/release-tagging.md` (authored 2026-04-27). Documents the seven-step flow, the major/minor/patch table with examples (renaming the `<out>` fence vs. adding a provider vs. fixing streaming fence-extraction), two heuristics for the hard additive-vs-breaking calls ("would a build pinned to the previous tag still work?" and "can existing extraction code fail?"), the five-step coordination beat for major bumps with BrioDocs, why `pyproject.toml` and `uv.lock` must stay in sync, what `/esperanto-release` does and doesn't enforce, and what's not yet covered (pre-release tags, yanking).
 - **Related:** `[[briodocs-submodule-integration]]`, `[[fencing-contract]]`, `[[client-contract-fencing]]`
 
 #### `[[testing-discipline]]`
@@ -263,11 +264,8 @@ Three wiki pages remain blocked on missing `docs/` sources. Suggested authoring 
 7. ~~**`docs/flows/langchain-bridge.md`**~~ — ✅ authored 2026-04-27.
 8. ~~**`docs/concepts/no-think-mode.md`**~~ — ✅ authored 2026-04-27.
 9. ~~**`docs/concepts/tier-based-server-config.md`**~~ — ✅ authored 2026-04-27.
-7. **`docs/flows/langchain-bridge.md`** — `to_langchain()` vs. full `BrioBaseChatModel` and how `no_think` threads through.
-8. **`docs/concepts/no-think-mode.md`** — what `/no_think` does, why it now lives on adapters instead of the factory.
-9. **`docs/concepts/tier-based-server-config.md`** — tier=HOW vs. model=WHAT split as a design concept.
 10. **`docs/integrations/briodocs-submodule.md`** — co-authored with the BrioDocs agent. Submodule pinning, import surface, version-coordination protocol.
-11. **`docs/operational/release-tagging.md`** — release discipline; what counts as breaking; how `/esperanto-release` fits.
+11. ~~**`docs/operational/release-tagging.md`**~~ — ✅ authored 2026-04-27.
 
 ## Stale-needs-update: existing canonical docs requiring freshness review
 
