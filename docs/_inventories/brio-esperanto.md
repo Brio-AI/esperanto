@@ -22,11 +22,11 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 14 |
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 15 |
 | `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 1 |
-| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 11 |
+| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 10 |
 
-**Totals:** 26 entries (1 repo overview + 25 pages). 11 of 26 are blocked on a missing `docs/` source — concentrated around the brio_ext-layer architectural commitments (fencing contract, adapter-driven rendering, no_think semantics) that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today.
+**Totals:** 26 entries (1 repo overview + 25 pages). 10 of 26 are blocked on a missing `docs/` source — the brio_ext-layer architectural commitments and operational discipline that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today. The foundational `[[fencing-contract]]` doc landed 2026-04-27; the remaining ten can be authored without further blockers.
 
 **Refresh log:**
 - 2026-04-27: `docs/2025-12-20_Developer_Guide.md` refreshed against version 2.8.1 — flipped `[[brio-esperanto]]` and `[[provider-normalization-pattern]]` to `current`.
@@ -34,6 +34,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 - 2026-04-27: `docs/llama_cpp_test_specification.md` refreshed — status badges now show both Oct 2025 (historical) and current ✅ marks for Qwen/Mistral/Phi-4; "The Bug" / "Current Workaround (HACK)" sections marked as historical with explicit "REMOVED" callouts; header points readers to `brio_ext_integration_v2.md` for operational use. Flipped `[[chat-adapter-system]]` and `[[llamacpp-local-provider]]` to `current`.
 - 2026-04-27: `docs/TRANSFORMERS_ADVANCED_FEATURES.md` refreshed — verified Recommended Models list and chunk-size table still match code; documented previously-missing `quantize`, `model_cache_dir`, and `device="auto"` auto-detection. Flipped `[[transformers-advanced-embedding]]` to `current`.
 - 2026-04-27: `docs/brio_ext_integration.md` refreshed — replaced 215-line superseded §10 with a clean redirect to v2 and the test spec; added §2.1 documenting `register_with_factory`; corrected real factual bugs (`LLAMACPP_BASE_URL` env var name, default port `8080` with v2 launcher caveat, `BRIO_USE_BRIO_FACTORY` removed as fictional, `<out>` fence framing fixed). Flipped `[[brio-ext-extension-package]]` to `current`.
+
+**Authoring log:**
+- 2026-04-27: `docs/architecture/fencing-contract.md` authored. Documents the `<out>...</out>` contract, the six-step `_ensure_fence` algorithm, where it's enforced (non-streaming + streaming), edge cases, what the contract does NOT cover, and versioning implications. Preserves the BrioDocs↔brio_ext flow diagram fragment from the archived `NEXT_STEPS.md`. Flipped `[[fencing-contract]]` to `current`.
 
 ---
 
@@ -140,9 +143,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[fencing-contract]]`
 - **Category:** architecture
-- **Source status:** `missing`
-- **Summary:** Every chat completion returned through `BrioAIFactory` is wrapped in `<out>...</out>`. The contract: brio_ext owns fencing, LLMs never see `<out>` in their prompts (deliberately removed in adapter prompts and stop tokens — see `NEXT_STEPS.md` for the rationale). Consumers (BrioDocs) rely on the fences to extract clean content from raw model output, including in streaming mode after commit 1855de0.
-- **Canonical source:** Needs `docs/architecture/fencing-contract.md`. The discipline is enforced in `_ensure_fence` (factory.py:250) and `_strip_trailing_incomplete_tokens` but documented only in code comments and the "Architecture Summary" diagram in `NEXT_STEPS.md`. This is the most load-bearing client contract this library has — it deserves an explicit doc.
+- **Source status:** `current`
+- **Summary:** Every chat completion returned through `BrioAIFactory` is wrapped in `<out>...</out>`. The contract: brio_ext owns fencing, LLMs never see `<out>` in their prompts (deliberately removed in adapter prompts and stop tokens). Consumers (BrioDocs) rely on the fences to extract clean content from raw model output, in both non-streaming and streaming mode.
+- **Canonical source:** `docs/architecture/fencing-contract.md` (authored 2026-04-27). Documents the contract shape, where it's enforced (`_ensure_fence`, `StreamingFenceFilter`), the six-step `_ensure_fence` algorithm, edge cases (empty generation, truncation, LLM-emitted fences), what the contract does NOT cover, and versioning implications. Cites the diagram fragment preserved in `docs/_OLD/NEXT_STEPS.md`.
 - **Related:** `[[client-contract-fencing]]`, `[[chat-adapter-system]]`, `[[streaming-completion-flow]]`, `[[langchain-bridge-flow]]`
 
 #### `[[http-only-architecture]]`
@@ -241,10 +244,10 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 ## Backlog: missing canonical docs
 
-Ten wiki pages are blocked on missing `docs/` sources. Suggested authoring order — earlier docs serve as foundation for later ones:
+Ten wiki pages remain blocked on missing `docs/` sources. (`docs/architecture/fencing-contract.md` was authored 2026-04-27 and is no longer in the backlog.) Suggested authoring order — earlier docs serve as foundation for later ones:
 
-1. **`docs/architecture/fencing-contract.md`** — the `<out>...</out>` discipline as a load-bearing client contract. Foundational; nearly every other missing doc references it.
-2. **`docs/concepts/client-contract-fencing.md`** — the contract framing (sibling to `fencing-contract.md`, focuses on what makes it a contract vs. a format choice). Tightly coupled with the previous item.
+1. ~~**`docs/architecture/fencing-contract.md`**~~ — ✅ authored 2026-04-27.
+2. **`docs/concepts/client-contract-fencing.md`** — the contract framing (sibling to `fencing-contract.md`, focuses on what makes it a contract vs. a format choice). Tightly coupled with the now-authored item above.
 3. **`docs/architecture/adapter-driven-rendering.md`** — the transport-vs-rendering split. The architectural fix that resolved the Qwen system-message bug; deserves a first-class explanation, not just a code comment.
 4. **`docs/architecture/provider-registry.md`** — static-dict + dynamic-import pattern, including the `BrioAIFactory` `deepcopy`-and-override extension trick.
 5. **`docs/architecture/chat-completion-pipeline.md`** — render → call → fence flow tying together the previous architecture docs.
@@ -254,8 +257,6 @@ Ten wiki pages are blocked on missing `docs/` sources. Suggested authoring order
 9. **`docs/concepts/tier-based-server-config.md`** — tier=HOW vs. model=WHAT split as a design concept.
 10. **`docs/integrations/briodocs-submodule.md`** — co-authored with the BrioDocs agent. Submodule pinning, import surface, version-coordination protocol.
 11. **`docs/operational/release-tagging.md`** — release discipline; what counts as breaking; how `/esperanto-release` fits.
-
-(Eleven items, not ten — `client-contract-fencing.md` and `fencing-contract.md` could plausibly fold together but are separated here because the architectural mechanism and the client-contract framing are usefully distinct.)
 
 ## Stale-needs-update: existing canonical docs requiring freshness review
 
