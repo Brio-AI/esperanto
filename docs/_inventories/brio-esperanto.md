@@ -22,11 +22,11 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 16 |
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 17 |
 | `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 1 |
-| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 9 |
+| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 8 |
 
-**Totals:** 26 entries (1 repo overview + 25 pages). 9 of 26 are blocked on a missing `docs/` source — the brio_ext-layer architectural commitments and operational discipline that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today. The foundational fencing pair (`[[fencing-contract]]` + `[[client-contract-fencing]]`) landed 2026-04-27; the remaining nine can be authored without further blockers.
+**Totals:** 26 entries (1 repo overview + 25 pages). 8 of 26 are blocked on a missing `docs/` source — the brio_ext-layer architectural commitments and operational discipline that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today.
 
 **Refresh log:**
 - 2026-04-27: `docs/2025-12-20_Developer_Guide.md` refreshed against version 2.8.1 — flipped `[[brio-esperanto]]` and `[[provider-normalization-pattern]]` to `current`.
@@ -38,6 +38,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 **Authoring log:**
 - 2026-04-27: `docs/architecture/fencing-contract.md` authored. Documents the `<out>...</out>` contract, the six-step `_ensure_fence` algorithm, where it's enforced (non-streaming + streaming), edge cases, what the contract does NOT cover, and versioning implications. Preserves the BrioDocs↔brio_ext flow diagram fragment from the archived `NEXT_STEPS.md`. Flipped `[[fencing-contract]]` to `current`.
 - 2026-04-27: `docs/concepts/client-contract-fencing.md` authored. Concept-level pair to `[[fencing-contract]]`: treats the fence as a versioned API contract rather than a format choice. Covers the silent-failure mode across the Esperanto ↔ BrioDocs boundary, what counts as breaking (illustrative table), the three implications of the discipline (tests assert directly, breaking changes need a coordination beat, provider parity is structural), and the sibling pattern in BrioRegistry. Flipped `[[client-contract-fencing]]` to `current`.
+- 2026-04-27: `docs/architecture/adapter-driven-rendering.md` authored. Documents the transport/rendering split that resolved the historic Qwen system-message bug. Covers the two render modes (`messages` vs. `prompt`), the three-branch dispatch logic in `render_for_model`, separation of concerns (provider HTTP knowledge vs. adapter chat-template knowledge), the model_id → chat_format → no-match resolution chain, how to add a new provider (and when to add it to `TEMPLATE_PROVIDERS` vs. `PROMPT_PROVIDERS`), how to add a new adapter, and why the split is structurally enforced (adapters live in brio_ext only). Flipped `[[adapter-driven-rendering]]` to `current`.
 
 ---
 
@@ -137,9 +138,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[adapter-driven-rendering]]`
 - **Category:** architecture
-- **Source status:** `missing`
+- **Source status:** `current`
 - **Summary:** The architectural choice to split *transport* (provider HTTP plumbing) from *rendering* (chat-template format). Providers shouldn't know about ChatML vs. Llama vs. Mistral; adapters shouldn't know about HTTP. The renderer dispatches: `TEMPLATE_PROVIDERS` (cloud APIs that handle templating themselves) get message-mode passthrough; `PROMPT_PROVIDERS` (llamacpp, hf_local) get adapter-rendered raw prompts.
-- **Canonical source:** Needs `docs/architecture/adapter-driven-rendering.md`. The `TEMPLATE_PROVIDERS`/`PROMPT_PROVIDERS` split lives only in `brio_ext/renderer.py` line 13–14 with no rationale documented. This was the architectural fix for the Qwen system-message bug and it deserves a first-class explanation.
+- **Canonical source:** `docs/architecture/adapter-driven-rendering.md` (authored 2026-04-27). Documents the two render modes, dispatch logic across the three branches in `render_for_model`, separation of concerns (what providers know vs. what adapters know), the resolution chain (model_id pattern → chat_format hint → no match), how to add new providers/adapters, and why the split is structurally enforced (adapters live in brio_ext only).
 - **Related:** `[[chat-adapter-system]]`, `[[chat-completion-pipeline]]`, `[[fencing-contract]]`
 
 #### `[[fencing-contract]]`
@@ -245,11 +246,11 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 ## Backlog: missing canonical docs
 
-Nine wiki pages remain blocked on missing `docs/` sources. (`docs/architecture/fencing-contract.md` and `docs/concepts/client-contract-fencing.md` were authored 2026-04-27 and are no longer in the backlog.) Suggested authoring order — earlier docs serve as foundation for later ones:
+Eight wiki pages remain blocked on missing `docs/` sources. Suggested authoring order — earlier docs serve as foundation for later ones:
 
 1. ~~**`docs/architecture/fencing-contract.md`**~~ — ✅ authored 2026-04-27.
 2. ~~**`docs/concepts/client-contract-fencing.md`**~~ — ✅ authored 2026-04-27.
-3. **`docs/architecture/adapter-driven-rendering.md`** — the transport-vs-rendering split. The architectural fix that resolved the Qwen system-message bug; deserves a first-class explanation, not just a code comment.
+3. ~~**`docs/architecture/adapter-driven-rendering.md`**~~ — ✅ authored 2026-04-27.
 4. **`docs/architecture/provider-registry.md`** — static-dict + dynamic-import pattern, including the `BrioAIFactory` `deepcopy`-and-override extension trick.
 5. **`docs/architecture/chat-completion-pipeline.md`** — render → call → fence flow tying together the previous architecture docs.
 6. **`docs/flows/streaming-completion.md`** — the streaming path including the recent fence-extraction fix and TTFT capture.
