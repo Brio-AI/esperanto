@@ -22,11 +22,11 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 15 |
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 16 |
 | `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 1 |
-| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 10 |
+| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 9 |
 
-**Totals:** 26 entries (1 repo overview + 25 pages). 10 of 26 are blocked on a missing `docs/` source — the brio_ext-layer architectural commitments and operational discipline that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today. The foundational `[[fencing-contract]]` doc landed 2026-04-27; the remaining ten can be authored without further blockers.
+**Totals:** 26 entries (1 repo overview + 25 pages). 9 of 26 are blocked on a missing `docs/` source — the brio_ext-layer architectural commitments and operational discipline that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today. The foundational fencing pair (`[[fencing-contract]]` + `[[client-contract-fencing]]`) landed 2026-04-27; the remaining nine can be authored without further blockers.
 
 **Refresh log:**
 - 2026-04-27: `docs/2025-12-20_Developer_Guide.md` refreshed against version 2.8.1 — flipped `[[brio-esperanto]]` and `[[provider-normalization-pattern]]` to `current`.
@@ -37,6 +37,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 **Authoring log:**
 - 2026-04-27: `docs/architecture/fencing-contract.md` authored. Documents the `<out>...</out>` contract, the six-step `_ensure_fence` algorithm, where it's enforced (non-streaming + streaming), edge cases, what the contract does NOT cover, and versioning implications. Preserves the BrioDocs↔brio_ext flow diagram fragment from the archived `NEXT_STEPS.md`. Flipped `[[fencing-contract]]` to `current`.
+- 2026-04-27: `docs/concepts/client-contract-fencing.md` authored. Concept-level pair to `[[fencing-contract]]`: treats the fence as a versioned API contract rather than a format choice. Covers the silent-failure mode across the Esperanto ↔ BrioDocs boundary, what counts as breaking (illustrative table), the three implications of the discipline (tests assert directly, breaking changes need a coordination beat, provider parity is structural), and the sibling pattern in BrioRegistry. Flipped `[[client-contract-fencing]]` to `current`.
 
 ---
 
@@ -205,9 +206,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[client-contract-fencing]]`
 - **Category:** concept
-- **Source status:** `missing`
+- **Source status:** `current`
 - **Summary:** The notion that the `<out>...</out>` envelope is not formatting — it is a production API contract with BrioDocs. Changing the fence shape (e.g., to `<output>`, or removing fencing for some provider, or letting LLMs emit fences themselves) would silently break every consumer that strips fences to get clean content. Sibling in spirit to BrioRegistry's `[[client-contract]]`.
-- **Canonical source:** Needs `docs/concepts/client-contract-fencing.md`. The discipline is referenced in `CLAUDE.md` and the LangChain wrapper docstring, but no doc treats it as a contract with versioning implications. Likely co-authored with `[[fencing-contract]]`.
+- **Canonical source:** `docs/concepts/client-contract-fencing.md` (authored 2026-04-27). Treats the discipline as distinct from the mechanism (which lives in `[[fencing-contract]]`). Covers the silent-failure mode the contract protects against, what counts as breaking, the three implications (tests assert directly, breaking changes need a coordination beat, provider parity is structural), and the sibling pattern in BrioRegistry.
 - **Related:** `[[fencing-contract]]`, `[[briodocs-submodule-integration]]`, `[[client-contract]]` (Registry-owned, parallel concept)
 
 #### `[[no-think-mode]]`
@@ -244,10 +245,10 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 ## Backlog: missing canonical docs
 
-Ten wiki pages remain blocked on missing `docs/` sources. (`docs/architecture/fencing-contract.md` was authored 2026-04-27 and is no longer in the backlog.) Suggested authoring order — earlier docs serve as foundation for later ones:
+Nine wiki pages remain blocked on missing `docs/` sources. (`docs/architecture/fencing-contract.md` and `docs/concepts/client-contract-fencing.md` were authored 2026-04-27 and are no longer in the backlog.) Suggested authoring order — earlier docs serve as foundation for later ones:
 
 1. ~~**`docs/architecture/fencing-contract.md`**~~ — ✅ authored 2026-04-27.
-2. **`docs/concepts/client-contract-fencing.md`** — the contract framing (sibling to `fencing-contract.md`, focuses on what makes it a contract vs. a format choice). Tightly coupled with the now-authored item above.
+2. ~~**`docs/concepts/client-contract-fencing.md`**~~ — ✅ authored 2026-04-27.
 3. **`docs/architecture/adapter-driven-rendering.md`** — the transport-vs-rendering split. The architectural fix that resolved the Qwen system-message bug; deserves a first-class explanation, not just a code comment.
 4. **`docs/architecture/provider-registry.md`** — static-dict + dynamic-import pattern, including the `BrioAIFactory` `deepcopy`-and-override extension trick.
 5. **`docs/architecture/chat-completion-pipeline.md`** — render → call → fence flow tying together the previous architecture docs.
