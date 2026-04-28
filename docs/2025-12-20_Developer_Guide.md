@@ -186,7 +186,7 @@ ADAPTERS = (
     QwenAdapter(),
     LlamaAdapter(),
     MistralAdapter(),
-    GemmaAdapter(),
+    Gemma4Adapter(),
     PhiAdapter(),
 )
 ```
@@ -460,7 +460,7 @@ ADAPTERS = (
     QwenAdapter(),
     LlamaAdapter(),
     MistralAdapter(),
-    GemmaAdapter(),
+    Gemma4Adapter(),
     PhiAdapter(),
     NewModelAdapter(),  # Add here
 )

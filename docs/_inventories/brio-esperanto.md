@@ -70,7 +70,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 #### `[[chat-adapter-system]]`
 - **Category:** subsystem
 - **Source status:** `current`
-- **Summary:** Adapter registry (`src/brio_ext/registry.py`) with `QwenAdapter`, `LlamaAdapter`, `MistralAdapter`, `GemmaAdapter`, `PhiAdapter` — each renders messages into the model's native chat-template format (ChatML, Llama, Mistral) and declares its own stop tokens. Selection prefers `model_id` pattern matching, falls back to an explicit `chat_format` hint for custom-named models.
+- **Summary:** Adapter registry (`src/brio_ext/registry.py`) with `QwenAdapter`, `LlamaAdapter`, `MistralAdapter`, `Gemma4Adapter`, `PhiAdapter` — each renders messages into the model's native chat-template format (ChatML, Llama, Mistral, Gemma 4) and declares its own stop tokens. Selection prefers `model_id` pattern matching, falls back to an explicit `chat_format` hint for custom-named models. As of 2026-04-28 (PR #6), `Gemma4Adapter` matches Gemma 4 only — Gemma 2/3 model ids no longer match (see `docs/2026-04-28_Gemma_4_Adapter_Breaking_Change.md`).
 - **Canonical source:** `docs/llama_cpp_test_specification.md` (refreshed 2026-04-27) plus `docs/brio_ext_integration_v2.md` §9.6 (live status matrix). Test spec now correctly shows all five adapters validated; historical "🔴 FAILS / 🟡 NOT TESTED" badges are preserved with current ✅ marks alongside. The `model_id` → `chat_format` selection logic lives only in `registry.py` docstrings — that's a gap to be addressed by `[[adapter-driven-rendering]]` when authored, not a staleness in the source.
 - **Related:** `[[fencing-contract]]`, `[[adapter-driven-rendering]]`, `[[llamacpp-local-provider]]`, `[[no-think-mode]]`
 

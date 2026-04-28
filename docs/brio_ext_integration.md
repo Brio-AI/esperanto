@@ -57,7 +57,7 @@ model = AIFactory.create_language(
 )
 ```
 
-- The renderer applies the correct chat template via the matching adapter (`QwenAdapter`, `LlamaAdapter`, `MistralAdapter`, `GemmaAdapter`, `PhiAdapter`).
+- The renderer applies the correct chat template via the matching adapter (`QwenAdapter`, `LlamaAdapter`, `MistralAdapter`, `Gemma4Adapter`, `PhiAdapter`). `Gemma4Adapter` matches Gemma 4 only — see `docs/2026-04-28_Gemma_4_Adapter_Breaking_Change.md` for the matcher narrowing.
 - The response is wrapped in `<out>...</out>` after generation by `_ensure_fenced_completion`. The LLM never sees `<out>` in its prompt or stop-token list — that contract is enforced entirely on the brio_ext side. See the `<out>` fencing notes in `CLAUDE.md` and (when authored) the `[[fencing-contract]]` wiki page.
 - **Port mismatch caveat:** the bare `LlamaCppLanguageModel` defaults to `http://localhost:8080`, but `scripts/start_server_v2.sh` binds `127.0.0.1:8765`. If you use the v2 launcher, set `LLAMACPP_BASE_URL=http://127.0.0.1:8765` or pass `base_url` in `config`.
 - Legacy fallback (OpenAI-compatible path) is still available by importing `esperanto.AIFactory` directly.
