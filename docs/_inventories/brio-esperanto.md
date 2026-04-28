@@ -22,11 +22,11 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 21 |
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 22 |
 | `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 1 |
-| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 4 |
+| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 3 |
 
-**Totals:** 26 entries (1 repo overview + 25 pages). 4 of 26 are blocked on a missing `docs/` source.
+**Totals:** 26 entries (1 repo overview + 25 pages). 3 of 26 are blocked on a missing `docs/` source.
 
 **Refresh log:**
 - 2026-04-27: `docs/2025-12-20_Developer_Guide.md` refreshed against version 2.8.1 — flipped `[[brio-esperanto]]` and `[[provider-normalization-pattern]]` to `current`.
@@ -43,6 +43,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 - 2026-04-27: `docs/architecture/chat-completion-pipeline.md` authored. Capstone for the architecture set — names the five stages (registry lookup, wrap, render, call, fence) plus the side-stage (metrics), shows the end-to-end call sequence, and points each stage to its owner doc. Documents `_stop_config_guard` as the smallest-invasive scope for per-call stop-token overrides; explains the async path's graceful degradation when a provider lacks an async variant. Flipped `[[chat-completion-pipeline]]` to `current`.
 - 2026-04-27: `docs/flows/streaming-completion.md` authored. Documents the streaming-vs-non-streaming asymmetry (brio_ext adds fences in non-streaming, passes streams through unchanged), the two state-machine filters (`StreamingFenceFilter`'s search-then-extract logic with tail buffer for split close tags; `StreamingThinkTagFilter`'s prefix-buffering for `<think>` suppression), composition order (fence first, then think), TTFT capture via `_StreamingResponseWrapper`, and why metrics logging is skipped for streams. Triggered a corrective patch to `[[fencing-contract]]` which had previously claimed streaming added fences. Flipped `[[streaming-completion-flow]]` to `current`.
 - 2026-04-27: `docs/flows/langchain-bridge.md` authored. Documents the two implementation classes (`BrioBaseChatModel` recommended; `BrioLangChainWrapper` legacy and frozen), the three entry points all returning `BrioBaseChatModel` (`model.to_langchain()`, `create_langchain_wrapper(...)`, direct construction), the invoke vs. stream call paths, the `no_think` threading from constructor → `chat_complete` → adapter render, and the four cases `_parse_fenced_content` handles (normal, unclosed `<think>`, all-think with JSON-extraction fallback, empty-after-cleaning). Flipped `[[langchain-bridge-flow]]` to `current`.
+- 2026-04-27: `docs/concepts/no-think-mode.md` authored. Documents the `no_think` flag's budget-pressure motivation, the trade-off (lower-quality reasoning vs. empty/truncated output), why it lives on per-adapter ownership (commit e520800 — Qwen prefills `<think></think>`, Gemma 4 omits the `<|think|>` marker, Llama/Mistral/Phi accept-and-ignore), the end-to-end threading through chat_complete and render_for_model, defaults across all four entry points, common patterns (tier-aware default, per-call override), and what it does NOT do (doesn't strip emitted tags, doesn't apply to cloud providers, doesn't gate on capability). Flipped `[[no-think-mode]]` to `current`.
 
 ---
 
@@ -218,9 +219,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[no-think-mode]]`
 - **Category:** concept
-- **Source status:** `missing`
-- **Summary:** Optional `/no_think` directive that brio_ext can prepend to the first user message for reasoning-capable models (Qwen3, Qwen3.5). Used when token budget can't accommodate a full reasoning block plus an answer (typical for Tier 2/3). Recently moved from factory ownership to per-adapter ownership (commit e520800) so each adapter can decide whether the directive applies.
-- **Canonical source:** Needs `docs/concepts/no-think-mode.md`. The `no_think` parameter threads through `factory.py`, `langchain_wrapper.py`, `renderer.py`, and the adapters but is documented only by inline docstrings. The reason it lives on adapters now (and not the factory) is non-obvious without reading the commit.
+- **Source status:** `current`
+- **Summary:** Optional flag that tells reasoning-capable models (Qwen3/Qwen3.5, Gemma 4) to skip their internal reasoning phase and produce an answer directly. Used when token budget can't accommodate a full reasoning block plus an answer (typical for Tier 2/3). Lives on per-adapter ownership (commit e520800) — each model family's suppression mechanism is different.
+- **Canonical source:** `docs/concepts/no-think-mode.md` (authored 2026-04-27). Documents the budget-pressure motivation and trade-off (lower-quality reasoning vs. empty/truncated output), why the flag lives on adapters (per-family mechanisms differ — Qwen prefills `<think></think>`, Gemma 4 omits a `<|think|>` marker, others accept-and-ignore), the end-to-end call path, per-adapter behavior table, defaults across the four entry points, common patterns (tier-aware default, per-call override), and what `no_think` does NOT do (doesn't strip emitted tags, doesn't apply to cloud providers, doesn't gate on capability).
 - **Related:** `[[chat-adapter-system]]`, `[[langchain-bridge-flow]]`, `[[tier-based-server-config]]`
 
 #### `[[tier-based-server-config]]`
@@ -250,7 +251,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 ## Backlog: missing canonical docs
 
-Four wiki pages remain blocked on missing `docs/` sources. Suggested authoring order — earlier docs serve as foundation for later ones:
+Three wiki pages remain blocked on missing `docs/` sources. Suggested authoring order — earlier docs serve as foundation for later ones:
 
 1. ~~**`docs/architecture/fencing-contract.md`**~~ — ✅ authored 2026-04-27.
 2. ~~**`docs/concepts/client-contract-fencing.md`**~~ — ✅ authored 2026-04-27.
@@ -259,6 +260,7 @@ Four wiki pages remain blocked on missing `docs/` sources. Suggested authoring o
 5. ~~**`docs/architecture/chat-completion-pipeline.md`**~~ — ✅ authored 2026-04-27.
 6. ~~**`docs/flows/streaming-completion.md`**~~ — ✅ authored 2026-04-27.
 7. ~~**`docs/flows/langchain-bridge.md`**~~ — ✅ authored 2026-04-27.
+8. ~~**`docs/concepts/no-think-mode.md`**~~ — ✅ authored 2026-04-27.
 7. **`docs/flows/langchain-bridge.md`** — `to_langchain()` vs. full `BrioBaseChatModel` and how `no_think` threads through.
 8. **`docs/concepts/no-think-mode.md`** — what `/no_think` does, why it now lives on adapters instead of the factory.
 9. **`docs/concepts/tier-based-server-config.md`** — tier=HOW vs. model=WHAT split as a design concept.
