@@ -22,11 +22,11 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 22 |
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 23 |
 | `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 1 |
-| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 3 |
+| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 2 |
 
-**Totals:** 26 entries (1 repo overview + 25 pages). 3 of 26 are blocked on a missing `docs/` source.
+**Totals:** 26 entries (1 repo overview + 25 pages). 2 of 26 are blocked on a missing `docs/` source.
 
 **Refresh log:**
 - 2026-04-27: `docs/2025-12-20_Developer_Guide.md` refreshed against version 2.8.1 — flipped `[[brio-esperanto]]` and `[[provider-normalization-pattern]]` to `current`.
@@ -44,6 +44,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 - 2026-04-27: `docs/flows/streaming-completion.md` authored. Documents the streaming-vs-non-streaming asymmetry (brio_ext adds fences in non-streaming, passes streams through unchanged), the two state-machine filters (`StreamingFenceFilter`'s search-then-extract logic with tail buffer for split close tags; `StreamingThinkTagFilter`'s prefix-buffering for `<think>` suppression), composition order (fence first, then think), TTFT capture via `_StreamingResponseWrapper`, and why metrics logging is skipped for streams. Triggered a corrective patch to `[[fencing-contract]]` which had previously claimed streaming added fences. Flipped `[[streaming-completion-flow]]` to `current`.
 - 2026-04-27: `docs/flows/langchain-bridge.md` authored. Documents the two implementation classes (`BrioBaseChatModel` recommended; `BrioLangChainWrapper` legacy and frozen), the three entry points all returning `BrioBaseChatModel` (`model.to_langchain()`, `create_langchain_wrapper(...)`, direct construction), the invoke vs. stream call paths, the `no_think` threading from constructor → `chat_complete` → adapter render, and the four cases `_parse_fenced_content` handles (normal, unclosed `<think>`, all-think with JSON-extraction fallback, empty-after-cleaning). Flipped `[[langchain-bridge-flow]]` to `current`.
 - 2026-04-27: `docs/concepts/no-think-mode.md` authored. Documents the `no_think` flag's budget-pressure motivation, the trade-off (lower-quality reasoning vs. empty/truncated output), why it lives on per-adapter ownership (commit e520800 — Qwen prefills `<think></think>`, Gemma 4 omits the `<|think|>` marker, Llama/Mistral/Phi accept-and-ignore), the end-to-end threading through chat_complete and render_for_model, defaults across all four entry points, common patterns (tier-aware default, per-call override), and what it does NOT do (doesn't strip emitted tags, doesn't apply to cloud providers, doesn't gate on capability). Flipped `[[no-think-mode]]` to `current`.
+- 2026-04-27: `docs/concepts/tier-based-server-config.md` authored. Documents the orthogonal split between tier (HOW to run — context window, GPU layers, threads, mlock) and model (WHAT to run — GGUF file, chat format), the three tier definitions and seven model selections from `briodocs_config.yaml` and `start_server_v2.sh`, why the earlier coupled-script design was wrong, productivity vs. correctness of pairs (e.g., Tier 3 + Phi-4 Reasoning is allowed but unproductive), how tier cascades into application behavior (no_think defaults, candidate_count, max_tokens), what tier does NOT mean (not quality, not class, not provider, not temperature), and why both the local server and BrioDocs share the YAML. Flipped `[[tier-based-server-config]]` to `current`.
 
 ---
 
@@ -226,9 +227,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[tier-based-server-config]]`
 - **Category:** concept
-- **Source status:** `missing`
+- **Source status:** `current`
 - **Summary:** Configuration split underlying `start_server_v2.sh`: tier defines *how* to run a local model (context window, GPU layers, threads, mlock), model defines *what* to run (which GGUF file, which chat format). The split lets BrioDocs select hardware-appropriate settings independently of model choice.
-- **Canonical source:** Needs `docs/concepts/tier-based-server-config.md`. The split is named in `brio_ext_integration_v2.md` ("Tier defines HOW to run; Model defines WHAT to run") but only as a benefits bullet; not explained as a design concept.
+- **Canonical source:** `docs/concepts/tier-based-server-config.md` (authored 2026-04-27). Documents the orthogonality of the two axes (3 tiers × 7 models = 21 valid combos), why the earlier coupled-script design was wrong (encoded the false assumption that hardware ↔ model identity are linked), the three tier definitions and seven model selections from `briodocs_config.yaml` and `start_server_v2.sh`, productivity vs. correctness of pairs (Tier 3 + Phi-4 Reasoning is allowed but unproductive), how tier cascades into application behavior (no_think defaults, candidate_count, max_tokens), what tier does NOT mean (not quality, not class, not provider, not temperature), why both the local server and BrioDocs read the same YAML, and how new tiers / models are added.
 - **Related:** `[[llamacpp-server-tiers]]`, `[[no-think-mode]]`, `[[hardware-tiers]]` (BrioDocs-owned)
 
 ### Operational
@@ -261,6 +262,7 @@ Three wiki pages remain blocked on missing `docs/` sources. Suggested authoring 
 6. ~~**`docs/flows/streaming-completion.md`**~~ — ✅ authored 2026-04-27.
 7. ~~**`docs/flows/langchain-bridge.md`**~~ — ✅ authored 2026-04-27.
 8. ~~**`docs/concepts/no-think-mode.md`**~~ — ✅ authored 2026-04-27.
+9. ~~**`docs/concepts/tier-based-server-config.md`**~~ — ✅ authored 2026-04-27.
 7. **`docs/flows/langchain-bridge.md`** — `to_langchain()` vs. full `BrioBaseChatModel` and how `no_think` threads through.
 8. **`docs/concepts/no-think-mode.md`** — what `/no_think` does, why it now lives on adapters instead of the factory.
 9. **`docs/concepts/tier-based-server-config.md`** — tier=HOW vs. model=WHAT split as a design concept.
