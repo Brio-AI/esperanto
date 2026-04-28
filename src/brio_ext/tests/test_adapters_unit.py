@@ -307,6 +307,75 @@ class TestGemma4Adapter:
         rendered = Gemma4Adapter().render(messages, no_think=True)
         assert rendered["prompt"] == expected
 
+    def test_render_rejects_empty_messages(self):
+        """Empty messages list must raise ValueError.
+
+        With no messages there is no useful prompt to render — the loop
+        would emit only the trailing ``<|turn>model\\n`` opener with no
+        context. Failing fast at the call site is clearer than producing
+        that degenerate output.
+        """
+        with pytest.raises(ValueError, match="at least one message"):
+            Gemma4Adapter().render([], no_think=True)
+
+    def test_render_rejects_tool_role(self):
+        """``role="tool"`` must raise NotImplementedError.
+
+        Tools are out of scope for the Gemma 4 adapter (see the module
+        docstring). Silently dropping a tool message would corrupt the
+        surrounding assistant/tool/assistant sequence by deleting the
+        tool-result context between turns, so we fail loudly.
+        """
+        messages = [
+            {"role": "user", "content": "Q"},
+            {"role": "assistant", "content": "calling tool..."},
+            {"role": "tool", "content": "tool result"},
+        ]
+        with pytest.raises(NotImplementedError, match="tool messages"):
+            Gemma4Adapter().render(messages, no_think=True)
+
+    def test_render_rejects_none_content(self):
+        """``content=None`` must raise ValueError.
+
+        Matches the Jinja template's strictness: ``message['content'] |
+        trim`` would raise ``AttributeError`` on ``None``. Raising here
+        gives a clearer error and prevents the adapter from silently
+        coercing ``None`` to an empty string.
+
+        Args:
+            self: Test instance.
+        """
+        messages = [
+            {"role": "user", "content": "Hi"},
+            {"role": "assistant", "content": None},
+        ]
+        with pytest.raises(ValueError, match=r"messages\[1\].*content=None"):
+            Gemma4Adapter().render(messages, no_think=True)
+
+    def test_consecutive_assistants_diverges_from_template(self, template):
+        """Pin the documented divergence for back-to-back assistant messages.
+
+        The template suppresses the second ``<|turn>model\\n`` opener
+        (continuation rule for tool-call flows, chat_template.jinja lines
+        218-233) but the adapter emits one. BrioDocs never produces this
+        shape so we accept the gap.
+
+        Args:
+            template: Loaded Gemma 4 chat template (jinja2 ``Template``).
+        """
+        messages = [
+            {"role": "user", "content": "Q"},
+            {"role": "assistant", "content": "Part 1."},
+            {"role": "assistant", "content": "Part 2."},
+        ]
+        template_output = self._render_template(template, messages, enable_thinking=False)
+        adapter_output = Gemma4Adapter().render(messages, no_think=True)["prompt"]
+
+        assert adapter_output != template_output
+        assert "<|turn>model\nPart 2." in adapter_output
+        assert "<|turn>model\nPart 2." not in template_output
+        assert "Part 1.<turn|>\nPart 2." in template_output
+
 
 class TestGemma4AdapterCleanResponse:
     """Gemma4Adapter.clean_response() strips Gemma 4 turn and channel markers."""
