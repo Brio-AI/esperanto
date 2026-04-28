@@ -6,7 +6,7 @@
 
 ## What
 
-Every chat completion returned through `BrioAIFactory` — non-streaming or streaming, cloud provider or local llama.cpp server — has its content wrapped in `<out>...</out>` fences:
+Every **non-streaming** chat completion returned through `BrioAIFactory` has its content wrapped in `<out>...</out>` fences:
 
 ```
 <out>
@@ -15,6 +15,8 @@ Every chat completion returned through `BrioAIFactory` — non-streaming or stre
 ```
 
 This is the **fencing contract**: brio_ext owns the fence; the LLM never sees `<out>` in its prompt or stop-token list; consumers (BrioDocs) rely on the fence to extract clean content from raw model output.
+
+For **streaming**, the contract is delivered differently. The raw `chat_complete(messages, stream=True)` stream is passed through unfenced — wrapping every chunk in `<out>...</out>` doesn't have well-defined semantics across retries, empty chunks, and errors. The LangChain wrapper (`BrioBaseChatModel.astream`) applies `StreamingFenceFilter` + `StreamingThinkTagFilter` to deliver fence-stripped content to the consumer; that's the equivalent guarantee on the streaming side. See [`[[streaming-completion-flow]]`](../flows/streaming-completion.md) for the asymmetry in detail.
 
 ```
 BrioDocs Application
@@ -80,11 +82,16 @@ Step 5 is the "LLM imitated us" case. If the prompt includes prior assistant tur
 
 ### Streaming responses
 
-Before commit `1855de0`, the streaming path did not apply the fence. Consumers calling `chat_complete(messages, stream=True)` (or `astream` via the LangChain wrapper) saw raw chunks without `<out>...</out>` framing, breaking the contract for any consumer that switched to streaming.
+`_ensure_fenced_completion` is type-checked: it only operates on `ChatCompletion`. Streaming returns a generator (sync) or async iterator (async), which falls through unchanged.
 
-The fix: `StreamingFenceFilter` (in `src/esperanto/utils/streaming.py`) now wraps the chunk stream and emits `<out>` before the first content chunk and `</out>` after the last. The shared module-level `_parse_fenced_content` helper (commit `7244b3e`) ensures both paths use identical extraction logic.
+Instead of wrapping chunks in fences, brio_ext provides extraction filters that consumers compose on the receiving side:
 
-`StreamingThinkTagFilter` runs alongside it for reasoning models that wrap all output in `<think>...</think>` — the filter passes through the post-think content while preserving the fence at the outer layer.
+- `StreamingFenceFilter` (in `src/esperanto/utils/streaming.py`) — extracts the inner content from `<out>...</out>` if the model happened to emit them, or passes through unchanged if not.
+- `StreamingThinkTagFilter` — suppresses content inside `<think>...</think>` for reasoning models.
+
+The LangChain wrapper (`BrioBaseChatModel.astream`) composes both filters automatically. Consumers using the raw streaming API directly need to apply the filters themselves if they want fence-free content.
+
+This is the asymmetry that distinguishes the streaming path from the non-streaming path: brio_ext *adds* fences in non-streaming, *strips* them in streaming (when the consumer uses the wrapper). The full rationale lives in [`[[streaming-completion-flow]]`](../flows/streaming-completion.md).
 
 ## What consumers can rely on
 
@@ -106,9 +113,9 @@ match = re.match(r"<out>\n?(.*?)\n?</out>", content, re.DOTALL)
 inner = match.group(1) if match else content
 ```
 
-The same shape holds for streaming — the very first non-empty chunk includes the opening `<out>\n`, the last chunk includes the closing `\n</out>`, and chunks in between carry whatever the model emitted between them.
+For **streaming consumers**, the shape is different — see [`[[streaming-completion-flow]]`](../flows/streaming-completion.md). Briefly: raw streams are not fenced; the LangChain wrapper applies extraction filters and yields fence-free content.
 
-The LangChain wrapper (`BrioBaseChatModel`) does the inner-content extraction automatically and returns the unfenced text in `_AIMessage.content`. Consumers that don't want to do their own extraction should use `model.to_langchain()` or `create_langchain_wrapper(model)`.
+The LangChain wrapper (`BrioBaseChatModel`) does the inner-content extraction automatically (in both modes) and returns the unfenced text in `_AIMessage.content`. Consumers that don't want to do their own extraction should use `model.to_langchain()` or `create_langchain_wrapper(model)`.
 
 ## Edge cases
 
@@ -122,7 +129,7 @@ The LangChain wrapper (`BrioBaseChatModel`) does the inner-content extraction au
 
 ## What the contract does NOT cover
 
-- **Streaming chunks individually.** `<out>` only appears in the first chunk and `</out>` in the last. Mid-stream chunks have neither — consumers must accumulate the chunks or use the LangChain wrapper.
+- **Raw streaming output.** `chat_complete(messages, stream=True)` returns chunks as the LLM produced them — brio_ext does NOT add `<out>` to streaming chunks. The equivalent guarantee for streaming is delivered at the LangChain wrapper boundary, where `StreamingFenceFilter` strips any LLM-emitted fences. See [`[[streaming-completion-flow]]`](../flows/streaming-completion.md).
 - **Tool calls / function calls.** `tool_calls` and `function_call` on `Message` are passed through unchanged. The fence wraps the `content` field only.
 - **Errors.** If the underlying provider raises, brio_ext re-raises. There is no "error fence" form.
 - **Raw `esperanto.AIFactory` calls.** This contract is brio_ext-specific. Code that imports `from esperanto.factory import AIFactory` directly (bypassing brio_ext) gets unfenced output. BrioDocs should always go through `BrioAIFactory`.

@@ -22,11 +22,11 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 19 |
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 20 |
 | `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 1 |
-| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 6 |
+| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 5 |
 
-**Totals:** 26 entries (1 repo overview + 25 pages). 6 of 26 are blocked on a missing `docs/` source. The architecture-layer set (`[[fencing-contract]]`, `[[adapter-driven-rendering]]`, `[[provider-registry-pattern]]`, `[[chat-completion-pipeline]]`) plus the discipline pair (`[[client-contract-fencing]]`) are now all current — the remaining six are flows, concepts, and operational docs that build on these.
+**Totals:** 26 entries (1 repo overview + 25 pages). 5 of 26 are blocked on a missing `docs/` source.
 
 **Refresh log:**
 - 2026-04-27: `docs/2025-12-20_Developer_Guide.md` refreshed against version 2.8.1 — flipped `[[brio-esperanto]]` and `[[provider-normalization-pattern]]` to `current`.
@@ -41,6 +41,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 - 2026-04-27: `docs/architecture/adapter-driven-rendering.md` authored. Documents the transport/rendering split that resolved the historic Qwen system-message bug. Covers the two render modes (`messages` vs. `prompt`), the three-branch dispatch logic in `render_for_model`, separation of concerns (provider HTTP knowledge vs. adapter chat-template knowledge), the model_id → chat_format → no-match resolution chain, how to add a new provider (and when to add it to `TEMPLATE_PROVIDERS` vs. `PROMPT_PROVIDERS`), how to add a new adapter, and why the split is structurally enforced (adapters live in brio_ext only). Flipped `[[adapter-driven-rendering]]` to `current`.
 - 2026-04-27: `docs/architecture/provider-registry.md` authored. Documents the strings-not-imports `_provider_modules` registry, why lazy `importlib` lookup matters for optional-dependency-heavy providers, the precise-error rewriting in `_import_provider_class`, the `deepcopy + explicit re-merge` pattern `BrioAIFactory` uses to extend the registry without leaking changes back to upstream, the `register_with_factory` legacy patch path (and the deliberate fact that it does NOT extend the registry), and what the design deliberately doesn't include (no plugin discovery, no runtime registration, no failover). Flipped `[[provider-registry-pattern]]` to `current`.
 - 2026-04-27: `docs/architecture/chat-completion-pipeline.md` authored. Capstone for the architecture set — names the five stages (registry lookup, wrap, render, call, fence) plus the side-stage (metrics), shows the end-to-end call sequence, and points each stage to its owner doc. Documents `_stop_config_guard` as the smallest-invasive scope for per-call stop-token overrides; explains the async path's graceful degradation when a provider lacks an async variant. Flipped `[[chat-completion-pipeline]]` to `current`.
+- 2026-04-27: `docs/flows/streaming-completion.md` authored. Documents the streaming-vs-non-streaming asymmetry (brio_ext adds fences in non-streaming, passes streams through unchanged), the two state-machine filters (`StreamingFenceFilter`'s search-then-extract logic with tail buffer for split close tags; `StreamingThinkTagFilter`'s prefix-buffering for `<think>` suppression), composition order (fence first, then think), TTFT capture via `_StreamingResponseWrapper`, and why metrics logging is skipped for streams. Triggered a corrective patch to `[[fencing-contract]]` which had previously claimed streaming added fences. Flipped `[[streaming-completion-flow]]` to `current`.
 
 ---
 
@@ -110,9 +111,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[streaming-completion-flow]]`
 - **Category:** flow
-- **Source status:** `missing`
-- **Summary:** Streaming path through brio_ext — uses `StreamingFenceFilter` and `StreamingThinkTagFilter` (in `esperanto.utils.streaming`) to apply `<out>`/`<output>` fence extraction and `<think>`-tag suppression chunk-by-chunk. Recently fixed (commit 1855de0) so the streaming path now matches the non-streaming `_ensure_fence` behavior.
-- **Canonical source:** Needs `docs/flows/streaming-completion.md`. The fix was substantive (PR #2 / commit 7244b3e ported `_parse_fenced_content` into a shared module-level function) but only the commit messages document it. TTFT measurement during streaming and the "final-chunk usage/timings" handoff also live only in code.
+- **Source status:** `current`
+- **Summary:** Streaming path through brio_ext — `_ensure_fenced_completion` short-circuits on non-`ChatCompletion` so streams pass through unchanged, and consumers (typically the LangChain wrapper) apply `StreamingFenceFilter` + `StreamingThinkTagFilter` to extract inner content. This is asymmetric to the non-streaming path (which adds fences); the streaming doc is where that asymmetry is named.
+- **Canonical source:** `docs/flows/streaming-completion.md` (authored 2026-04-27). Documents the asymmetry, why brio_ext doesn't wrap chunks in `<out>` (no well-defined semantics across retries / empty chunks / errors), the two filters' state machines (with the tail-buffer trick that handles close tags split across chunks), TTFT capture via `_StreamingResponseWrapper`, and why metrics logging is skipped for streams. Triggered a corrective edit to `[[fencing-contract]]` which had previously claimed (incorrectly) that the streaming path adds fences.
 - **Related:** `[[fencing-contract]]`, `[[langchain-bridge-flow]]`, `[[performance-metrics]]`
 
 #### `[[adding-a-new-provider]]`
@@ -248,14 +249,14 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 ## Backlog: missing canonical docs
 
-Six wiki pages remain blocked on missing `docs/` sources. Suggested authoring order — earlier docs serve as foundation for later ones:
+Five wiki pages remain blocked on missing `docs/` sources. Suggested authoring order — earlier docs serve as foundation for later ones:
 
 1. ~~**`docs/architecture/fencing-contract.md`**~~ — ✅ authored 2026-04-27.
 2. ~~**`docs/concepts/client-contract-fencing.md`**~~ — ✅ authored 2026-04-27.
 3. ~~**`docs/architecture/adapter-driven-rendering.md`**~~ — ✅ authored 2026-04-27.
 4. ~~**`docs/architecture/provider-registry.md`**~~ — ✅ authored 2026-04-27.
 5. ~~**`docs/architecture/chat-completion-pipeline.md`**~~ — ✅ authored 2026-04-27.
-6. **`docs/flows/streaming-completion.md`** — the streaming path including the recent fence-extraction fix and TTFT capture.
+6. ~~**`docs/flows/streaming-completion.md`**~~ — ✅ authored 2026-04-27.
 7. **`docs/flows/langchain-bridge.md`** — `to_langchain()` vs. full `BrioBaseChatModel` and how `no_think` threads through.
 8. **`docs/concepts/no-think-mode.md`** — what `/no_think` does, why it now lives on adapters instead of the factory.
 9. **`docs/concepts/tier-based-server-config.md`** — tier=HOW vs. model=WHAT split as a design concept.
