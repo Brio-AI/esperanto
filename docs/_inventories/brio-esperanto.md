@@ -22,11 +22,11 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 17 |
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 18 |
 | `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 1 |
-| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 8 |
+| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 7 |
 
-**Totals:** 26 entries (1 repo overview + 25 pages). 8 of 26 are blocked on a missing `docs/` source — the brio_ext-layer architectural commitments and operational discipline that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today.
+**Totals:** 26 entries (1 repo overview + 25 pages). 7 of 26 are blocked on a missing `docs/` source — the brio_ext-layer architectural commitments and operational discipline that are load-bearing for BrioDocs but live only as inline code comments and CLAUDE.md directives today.
 
 **Refresh log:**
 - 2026-04-27: `docs/2025-12-20_Developer_Guide.md` refreshed against version 2.8.1 — flipped `[[brio-esperanto]]` and `[[provider-normalization-pattern]]` to `current`.
@@ -39,6 +39,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 - 2026-04-27: `docs/architecture/fencing-contract.md` authored. Documents the `<out>...</out>` contract, the six-step `_ensure_fence` algorithm, where it's enforced (non-streaming + streaming), edge cases, what the contract does NOT cover, and versioning implications. Preserves the BrioDocs↔brio_ext flow diagram fragment from the archived `NEXT_STEPS.md`. Flipped `[[fencing-contract]]` to `current`.
 - 2026-04-27: `docs/concepts/client-contract-fencing.md` authored. Concept-level pair to `[[fencing-contract]]`: treats the fence as a versioned API contract rather than a format choice. Covers the silent-failure mode across the Esperanto ↔ BrioDocs boundary, what counts as breaking (illustrative table), the three implications of the discipline (tests assert directly, breaking changes need a coordination beat, provider parity is structural), and the sibling pattern in BrioRegistry. Flipped `[[client-contract-fencing]]` to `current`.
 - 2026-04-27: `docs/architecture/adapter-driven-rendering.md` authored. Documents the transport/rendering split that resolved the historic Qwen system-message bug. Covers the two render modes (`messages` vs. `prompt`), the three-branch dispatch logic in `render_for_model`, separation of concerns (provider HTTP knowledge vs. adapter chat-template knowledge), the model_id → chat_format → no-match resolution chain, how to add a new provider (and when to add it to `TEMPLATE_PROVIDERS` vs. `PROMPT_PROVIDERS`), how to add a new adapter, and why the split is structurally enforced (adapters live in brio_ext only). Flipped `[[adapter-driven-rendering]]` to `current`.
+- 2026-04-27: `docs/architecture/provider-registry.md` authored. Documents the strings-not-imports `_provider_modules` registry, why lazy `importlib` lookup matters for optional-dependency-heavy providers, the precise-error rewriting in `_import_provider_class`, the `deepcopy + explicit re-merge` pattern `BrioAIFactory` uses to extend the registry without leaking changes back to upstream, the `register_with_factory` legacy patch path (and the deliberate fact that it does NOT extend the registry), and what the design deliberately doesn't include (no plugin discovery, no runtime registration, no failover). Flipped `[[provider-registry-pattern]]` to `current`.
 
 ---
 
@@ -124,9 +125,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[provider-registry-pattern]]`
 - **Category:** architecture
-- **Source status:** `missing`
+- **Source status:** `current`
 - **Summary:** Static dictionary + `importlib`-based dynamic loading — `_provider_modules["language"]["openai"] = "esperanto.providers.llm.openai:OpenAILanguageModel"`. Lets the library declare 15+ providers without import-time costs from optional dependencies (e.g., `transformers`, `torch`). `BrioAIFactory` extends the parent map by `deepcopy` + override (`_LANGUAGE_OVERRIDES` for `llamacpp`/`hf_local`).
-- **Canonical source:** Needs `docs/architecture/provider-registry.md`. Described informally in the developer guide's Registry Architecture section, but the `deepcopy`-and-override extension pattern that brio_ext uses isn't explained anywhere.
+- **Canonical source:** `docs/architecture/provider-registry.md` (authored 2026-04-27). Documents the strings-not-imports pattern, the precise-error rewriting in `_import_provider_class`, the `deepcopy + explicit re-merge` extension trick (with rationale: defensive against future in-place mutations), the `register_with_factory` legacy patch path (and why it doesn't extend the registry), the lifecycle of a single `create_*` call, and what the design deliberately does NOT do (no plugin discovery, no runtime registration, no failover).
 - **Related:** `[[esperanto-core-library]]`, `[[brio-ext-extension-package]]`, `[[adding-a-new-provider]]`
 
 #### `[[provider-normalization-pattern]]`
@@ -246,12 +247,12 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 ## Backlog: missing canonical docs
 
-Eight wiki pages remain blocked on missing `docs/` sources. Suggested authoring order — earlier docs serve as foundation for later ones:
+Seven wiki pages remain blocked on missing `docs/` sources. Suggested authoring order — earlier docs serve as foundation for later ones:
 
 1. ~~**`docs/architecture/fencing-contract.md`**~~ — ✅ authored 2026-04-27.
 2. ~~**`docs/concepts/client-contract-fencing.md`**~~ — ✅ authored 2026-04-27.
 3. ~~**`docs/architecture/adapter-driven-rendering.md`**~~ — ✅ authored 2026-04-27.
-4. **`docs/architecture/provider-registry.md`** — static-dict + dynamic-import pattern, including the `BrioAIFactory` `deepcopy`-and-override extension trick.
+4. ~~**`docs/architecture/provider-registry.md`**~~ — ✅ authored 2026-04-27.
 5. **`docs/architecture/chat-completion-pipeline.md`** — render → call → fence flow tying together the previous architecture docs.
 6. **`docs/flows/streaming-completion.md`** — the streaming path including the recent fence-extraction fix and TTFT capture.
 7. **`docs/flows/langchain-bridge.md`** — `to_langchain()` vs. full `BrioBaseChatModel` and how `no_think` threads through.
