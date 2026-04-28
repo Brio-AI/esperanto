@@ -22,11 +22,11 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 | Status | Meaning | Count |
 |---|---|---|
-| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 20 |
+| `current` | Canonical source exists in `docs/` and reflects code today. Wiki page can be authored from it directly. | 21 |
 | `stale-needs-update` | Canonical source exists in `docs/` but predates substantive changes. Refresh the source before citing. | 1 |
-| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 5 |
+| `missing` | No canonical `docs/` source yet. A new doc must be authored before the wiki page can land. | 4 |
 
-**Totals:** 26 entries (1 repo overview + 25 pages). 5 of 26 are blocked on a missing `docs/` source.
+**Totals:** 26 entries (1 repo overview + 25 pages). 4 of 26 are blocked on a missing `docs/` source.
 
 **Refresh log:**
 - 2026-04-27: `docs/2025-12-20_Developer_Guide.md` refreshed against version 2.8.1 — flipped `[[brio-esperanto]]` and `[[provider-normalization-pattern]]` to `current`.
@@ -42,6 +42,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 - 2026-04-27: `docs/architecture/provider-registry.md` authored. Documents the strings-not-imports `_provider_modules` registry, why lazy `importlib` lookup matters for optional-dependency-heavy providers, the precise-error rewriting in `_import_provider_class`, the `deepcopy + explicit re-merge` pattern `BrioAIFactory` uses to extend the registry without leaking changes back to upstream, the `register_with_factory` legacy patch path (and the deliberate fact that it does NOT extend the registry), and what the design deliberately doesn't include (no plugin discovery, no runtime registration, no failover). Flipped `[[provider-registry-pattern]]` to `current`.
 - 2026-04-27: `docs/architecture/chat-completion-pipeline.md` authored. Capstone for the architecture set — names the five stages (registry lookup, wrap, render, call, fence) plus the side-stage (metrics), shows the end-to-end call sequence, and points each stage to its owner doc. Documents `_stop_config_guard` as the smallest-invasive scope for per-call stop-token overrides; explains the async path's graceful degradation when a provider lacks an async variant. Flipped `[[chat-completion-pipeline]]` to `current`.
 - 2026-04-27: `docs/flows/streaming-completion.md` authored. Documents the streaming-vs-non-streaming asymmetry (brio_ext adds fences in non-streaming, passes streams through unchanged), the two state-machine filters (`StreamingFenceFilter`'s search-then-extract logic with tail buffer for split close tags; `StreamingThinkTagFilter`'s prefix-buffering for `<think>` suppression), composition order (fence first, then think), TTFT capture via `_StreamingResponseWrapper`, and why metrics logging is skipped for streams. Triggered a corrective patch to `[[fencing-contract]]` which had previously claimed streaming added fences. Flipped `[[streaming-completion-flow]]` to `current`.
+- 2026-04-27: `docs/flows/langchain-bridge.md` authored. Documents the two implementation classes (`BrioBaseChatModel` recommended; `BrioLangChainWrapper` legacy and frozen), the three entry points all returning `BrioBaseChatModel` (`model.to_langchain()`, `create_langchain_wrapper(...)`, direct construction), the invoke vs. stream call paths, the `no_think` threading from constructor → `chat_complete` → adapter render, and the four cases `_parse_fenced_content` handles (normal, unclosed `<think>`, all-think with JSON-extraction fallback, empty-after-cleaning). Flipped `[[langchain-bridge-flow]]` to `current`.
 
 ---
 
@@ -104,9 +105,9 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 #### `[[langchain-bridge-flow]]`
 - **Category:** flow
-- **Source status:** `missing`
-- **Summary:** How `model.to_langchain()` (and the richer `BrioBaseChatModel` / `create_langchain_wrapper`) preserves the brio_ext rendering pipeline when consumed by LangChain/LangGraph — converting LangChain message types to brio_ext format, calling the wrapped `chat_complete`, then stripping `<out>` fences and `<think>` blocks before returning an `_AIMessage`.
-- **Canonical source:** Needs `docs/flows/langchain-bridge.md`. Touched briefly in `docs/brio_ext_integration.md` §5 and the developer guide's LangChain Integration section, but the two-paths story (lightweight `to_langchain()` vs. full `BrioBaseChatModel`) and the `no_think` parameter wiring aren't explained.
+- **Source status:** `current`
+- **Summary:** How `model.to_langchain()` (and the richer `BrioBaseChatModel` / `create_langchain_wrapper`) preserves the brio_ext rendering pipeline when consumed by LangChain/LangGraph — converting LangChain message types to brio_ext format, calling the wrapped `chat_complete`, then stripping `<out>` fences and `<think>` blocks before returning a clean `AIMessage`.
+- **Canonical source:** `docs/flows/langchain-bridge.md` (authored 2026-04-27). Documents the two implementation classes (`BrioBaseChatModel` recommended; `BrioLangChainWrapper` legacy/frozen), the three entry points that all return `BrioBaseChatModel`, the invoke vs. stream call paths, how `no_think` threads from the constructor through `chat_complete` into the adapter's `render`, and the four cases handled by `_parse_fenced_content` (normal, unclosed `<think>`, all-think output with JSON-extraction fallback, empty-after-cleaning with unclosed think).
 - **Related:** `[[langchain-langgraph-integration]]`, `[[fencing-contract]]`, `[[no-think-mode]]`, `[[streaming-completion-flow]]`
 
 #### `[[streaming-completion-flow]]`
@@ -249,7 +250,7 @@ Every entry below has a `source_status` field with exactly one of three values.
 
 ## Backlog: missing canonical docs
 
-Five wiki pages remain blocked on missing `docs/` sources. Suggested authoring order — earlier docs serve as foundation for later ones:
+Four wiki pages remain blocked on missing `docs/` sources. Suggested authoring order — earlier docs serve as foundation for later ones:
 
 1. ~~**`docs/architecture/fencing-contract.md`**~~ — ✅ authored 2026-04-27.
 2. ~~**`docs/concepts/client-contract-fencing.md`**~~ — ✅ authored 2026-04-27.
@@ -257,6 +258,7 @@ Five wiki pages remain blocked on missing `docs/` sources. Suggested authoring o
 4. ~~**`docs/architecture/provider-registry.md`**~~ — ✅ authored 2026-04-27.
 5. ~~**`docs/architecture/chat-completion-pipeline.md`**~~ — ✅ authored 2026-04-27.
 6. ~~**`docs/flows/streaming-completion.md`**~~ — ✅ authored 2026-04-27.
+7. ~~**`docs/flows/langchain-bridge.md`**~~ — ✅ authored 2026-04-27.
 7. **`docs/flows/langchain-bridge.md`** — `to_langchain()` vs. full `BrioBaseChatModel` and how `no_think` threads through.
 8. **`docs/concepts/no-think-mode.md`** — what `/no_think` does, why it now lives on adapters instead of the factory.
 9. **`docs/concepts/tier-based-server-config.md`** — tier=HOW vs. model=WHAT split as a design concept.
